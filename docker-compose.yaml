@@ -3,6 +3,6 @@ services:
   postgres:
     image: postgres:latest
     environment:
-      - POSTGRES_DB=todo
+      - POSTGRES_DB=posada
       - POSTGRES_USER=root
       - POSTGRES_PASSWORD=secret
