@@ -1,13 +1,13 @@
-todo:
-	docker run --name todo --network bank-network -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:latest
+posada:
+	docker run --name posada --network bank-network -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:latest
 
 createdb:
-	docker exec -it todo createdb --username=root --owner=root todo
+	docker exec -it posada createdb --username=root --owner=root posada
 
-sqlc:
-	sqlc generate
+migrateup:
+	migrate -path db/migration -database "postgres://root:secret@localhost:5432/posada?sslmode=disable" -verbose up
 
-mock:
-	mockgen -package mockdb -destination db/mock/store.go github.com/newbri/todo/db/sqlc Store
+migratedown:
+	migrate -path db/migration -database "postgres://root:secret@localhost:5432/posada?sslmode=disable" -verbose down
 
-.PHONY: todo createdb sqlc mock
+.PHONY: todo createdb migrateup migratedown
