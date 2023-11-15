@@ -21,7 +21,12 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal().Msgf("an error '%s' was not expected when opening a stub database connection", err)
 	}
-	defer db.Close()
+	defer func(db *sql.DB) {
+		err := db.Close()
+		if err != nil {
+
+		}
+	}(db)
 
 	os.Exit(m.Run())
 }
