@@ -2,26 +2,40 @@ package db
 
 import (
 	"database/sql"
+	"github.com/DATA-DOG/go-sqlmock"
 	_ "github.com/lib/pq"
 	"github.com/newbri/posadamissportia/db/util"
-	"log"
+	"github.com/rs/zerolog/log"
+	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
+	"time"
 )
 
-var testQueries *Queries
-var testDB *sql.DB
+var mocker sqlmock.Sqlmock
+var db *sql.DB
 
 func TestMain(m *testing.M) {
-	config, err := util.LoadConfig("../")
+	var err error
+	db, mocker, err = sqlmock.New()
 	if err != nil {
-		log.Fatal("cannot load config:", err)
+		log.Fatal().Msgf("an error '%s' was not expected when opening a stub database connection", err)
 	}
-	testDB, err = sql.Open(config.DBDriver, config.DBSource)
-	if err != nil {
-		log.Fatal("could not connect to the database", err)
-	}
+	defer db.Close()
 
-	testQueries = New(testDB)
 	os.Exit(m.Run())
+}
+
+func createRandomUser(t *testing.T) User {
+	hashedPassword, err := util.HashPassword(util.RandomString(6))
+	require.NoError(t, err)
+
+	return User{
+		Username:          util.RandomOwner(),
+		HashedPassword:    hashedPassword,
+		FullName:          util.RandomOwner(),
+		Email:             util.RandomEmail(),
+		PasswordChangedAt: time.Now(),
+		CreatedAt:         time.Now(),
+	}
 }
