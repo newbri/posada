@@ -2,37 +2,63 @@ package db
 
 import (
 	"context"
-	"github.com/newbri/posadamissportia/db/util"
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/require"
+	"regexp"
 	"testing"
 )
 
-func createRandomUser(t *testing.T) User {
-	hashedPassword, err := util.HashPassword(util.RandomString(6))
-	require.NoError(t, err)
+func TestCreateUser(t *testing.T) {
+	store := NewStore(db)
+	user := createRandomUser(t)
 
-	arg := CreateUserParams{
-		Username:       util.RandomOwner(),
-		HashedPassword: hashedPassword,
-		FullName:       util.RandomOwner(),
-		Email:          util.RandomEmail(),
+	rows := sqlmock.NewRows([]string{"username", "hashed_password", "full_name", "email", "password_changed_at", "created_at"}).
+		AddRow(user.Username,
+			user.HashedPassword,
+			user.FullName,
+			user.Email,
+			user.PasswordChangedAt,
+			user.CreatedAt,
+		)
+
+	testCases := []struct {
+		name     string
+		query    string
+		arg      CreateUserParams
+		validate func(query string, arg CreateUserParams)
+	}{
+		{
+			name:  "OK",
+			query: createUser,
+			arg: CreateUserParams{
+				Username:       user.Username,
+				HashedPassword: user.HashedPassword,
+				FullName:       user.FullName,
+				Email:          user.Email,
+			},
+			validate: func(query string, arg CreateUserParams) {
+
+				mocker.ExpectQuery(regexp.QuoteMeta(createUser)).
+					WithArgs(arg.Username, arg.HashedPassword, arg.FullName, arg.Email).
+					WillReturnRows(rows)
+
+				actualUser, err := store.CreateUser(context.Background(), arg)
+				require.NoError(t, err)
+				require.NotNil(t, actualUser)
+			},
+		},
 	}
 
-	user, err := testQueries.CreateUser(context.Background(), arg)
-	require.NoError(t, err)
-	require.NotEmpty(t, user)
+	for i := range testCases {
+		tc := testCases[i]
 
-	require.Equal(t, arg.Username, user.Username)
-	require.Equal(t, arg.HashedPassword, user.HashedPassword)
-	require.Equal(t, arg.FullName, user.FullName)
-	require.Equal(t, arg.Email, user.Email)
+		t.Run(tc.name, func(t *testing.T) {
+			tc.validate(tc.query, tc.arg)
 
-	require.NotZero(t, user.CreatedAt)
-	require.NotZero(t, user.PasswordChangedAt)
-
-	return user
-}
-
-func TestCreateUser(t *testing.T) {
-	createRandomUser(t)
+			// we make sure that all expectations were met
+			if err := mocker.ExpectationsWereMet(); err != nil {
+				t.Errorf("there were unfulfilled expectations: %s", err)
+			}
+		})
+	}
 }
