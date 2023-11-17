@@ -10,4 +10,7 @@ migrateup:
 migratedown:
 	migrate -path db/migration -database "postgres://root:secret@localhost:5432/posada?sslmode=disable" -verbose down
 
-.PHONY: todo createdb migrateup migratedown
+mock:
+	mockgen -package mockdb -destination db/mock/store.go github.com/newbri/posadamissportia/db Store
+
+.PHONY: todo createdb migrateup migratedown mock
