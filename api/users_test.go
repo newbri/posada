@@ -93,6 +93,29 @@ func TestCreateUser(t *testing.T) {
 				require.Equal(t, expectedUser.CreatedAt.Unix(), request.CreatedAt.Unix())
 			},
 		},
+		{
+			name: "StatusBadRequest",
+			body: gin.H{
+				"username":  expectedUser.Username,
+				"password":  password,
+				"full_name": expectedUser.FullName,
+				"email1":    expectedUser.Email,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				arg := db.CreateUserParams{
+					Username: expectedUser.Username,
+					FullName: expectedUser.FullName,
+					Email:    expectedUser.Email,
+				}
+
+				store.EXPECT().
+					CreateUser(gomock.Any(), EqCreateUserParams(arg, password)).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
 	}
 
 	for i := range testCases {
