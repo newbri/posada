@@ -2,10 +2,12 @@ package api
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
+	"github.com/lib/pq"
 	"github.com/newbri/posadamissportia/db"
 	mockdb "github.com/newbri/posadamissportia/db/mock"
 	"github.com/newbri/posadamissportia/db/util"
@@ -48,6 +50,7 @@ func EqCreateUserParams(arg db.CreateUserParams, password string) gomock.Matcher
 
 func TestCreateUser(t *testing.T) {
 	password := "lexy84"
+	longPassword := util.RandomString(73)
 	expectedUser := createRandomUser()
 
 	testCases := []struct {
@@ -114,6 +117,71 @@ func TestCreateUser(t *testing.T) {
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "BadPassword",
+			body: gin.H{
+				"username":  expectedUser.Username,
+				"password":  longPassword,
+				"full_name": expectedUser.FullName,
+				"email":     expectedUser.Email,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				arg := db.CreateUserParams{
+					Username: expectedUser.Username,
+					FullName: expectedUser.FullName,
+					Email:    expectedUser.Email,
+				}
+
+				store.EXPECT().
+					CreateUser(gomock.Any(), EqCreateUserParams(arg, longPassword)).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+		{
+			name: "DuplicateUsername",
+			body: gin.H{
+				"username":  expectedUser.Username,
+				"password":  password,
+				"full_name": expectedUser.FullName,
+				"email":     expectedUser.Email,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				arg := db.CreateUserParams{
+					Username: expectedUser.Username,
+					FullName: expectedUser.FullName,
+					Email:    expectedUser.Email,
+				}
+
+				store.EXPECT().
+					CreateUser(gomock.Any(), EqCreateUserParams(arg, password)).
+					Times(1).
+					Return(db.User{}, &pq.Error{Code: "23505"})
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusForbidden, recorder.Code)
+			},
+		},
+		{
+			name: "InternalError",
+			body: gin.H{
+				"username":  expectedUser.Username,
+				"password":  password,
+				"full_name": expectedUser.FullName,
+				"email":     expectedUser.Email,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					CreateUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(db.User{}, sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 		},
 	}
