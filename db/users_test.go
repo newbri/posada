@@ -62,3 +62,51 @@ func TestCreateUser(t *testing.T) {
 		})
 	}
 }
+
+func TestGetUser(t *testing.T) {
+	store := NewStore(db)
+	user := createRandomUser(t)
+
+	rows := sqlmock.NewRows([]string{"username", "hashed_password", "full_name", "email", "password_changed_at", "created_at"}).
+		AddRow(user.Username,
+			user.HashedPassword,
+			user.FullName,
+			user.Email,
+			user.PasswordChangedAt,
+			user.CreatedAt,
+		)
+
+	testCases := []struct {
+		name     string
+		query    string
+		validate func(query, username string)
+	}{
+		{
+			name:  "OK",
+			query: getUser,
+			validate: func(query, username string) {
+
+				mocker.ExpectQuery(regexp.QuoteMeta(getUser)).
+					WithArgs(username).
+					WillReturnRows(rows)
+
+				actualUser, err := store.GetUser(context.Background(), username)
+				require.NoError(t, err)
+				require.NotNil(t, actualUser)
+			},
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			tc.validate(tc.query, user.Username)
+
+			// we make sure that all expectations were met
+			if err := mocker.ExpectationsWereMet(); err != nil {
+				t.Errorf("there were unfulfilled expectations: %s", err)
+			}
+		})
+	}
+}
