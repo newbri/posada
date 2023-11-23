@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/require"
 	"regexp"
@@ -109,4 +110,61 @@ func TestGetUser(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUpdateUserFullName(t *testing.T) {
+	store := NewStore(db)
+	user := createRandomUser(t)
+
+	arg := UpdateUserParams{
+		Username: user.Username,
+		FullName: sql.NullString{
+			String: user.FullName,
+			Valid:  true,
+		},
+	}
+
+	mockUpdateUserDB(user, arg)
+	updatedUser, err := store.UpdateUser(context.Background(), arg)
+
+	require.NoError(t, err)
+	require.Equal(t, user.Email, updatedUser.Email)
+	require.Equal(t, user.FullName, updatedUser.FullName)
+	require.Equal(t, user.HashedPassword, updatedUser.HashedPassword)
+}
+
+func TestUpdateUserEmail(t *testing.T) {
+	store := NewStore(db)
+	user := createRandomUser(t)
+
+	arg := UpdateUserParams{
+		Username: user.Username,
+		Email: sql.NullString{
+			String: user.Email,
+			Valid:  true,
+		},
+	}
+
+	mockUpdateUserDB(user, arg)
+	updatedUser, err := store.UpdateUser(context.Background(), arg)
+
+	require.NoError(t, err)
+	require.Equal(t, user.Email, updatedUser.Email)
+	require.Equal(t, user.FullName, updatedUser.FullName)
+	require.Equal(t, user.HashedPassword, updatedUser.HashedPassword)
+}
+
+func mockUpdateUserDB(user User, args UpdateUserParams) {
+	rows := sqlmock.NewRows([]string{"username", "hashed_password", "full_name", "email", "password_changed_at", "created_at"}).
+		AddRow(user.Username,
+			user.HashedPassword,
+			user.FullName,
+			user.Email,
+			user.PasswordChangedAt,
+			user.CreatedAt,
+		)
+
+	mocker.ExpectQuery(regexp.QuoteMeta(updateUser)).
+		WithArgs(args.HashedPassword, args.PasswordChangedAt, args.FullName, args.Email, args.Username).
+		WillReturnRows(rows)
 }

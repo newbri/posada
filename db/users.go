@@ -66,13 +66,12 @@ type UpdateUserParams struct {
 
 const updateUser = `
 UPDATE users
-SET
-    hashed_password = coalesce($1, hashed_password),
+SET hashed_password = coalesce($1, hashed_password),
     password_changed_at = coalesce($2, password_changed_at),
     full_name = coalesce($3, full_name),
     email = coalesce($4, email)
 WHERE username = $5
-RETURNING username, hashed_password, full_name, email, password_changed_at, created_at
+RETURNING username, hashed_password, full_name, email, password_changed_at, created_at;
 `
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
