@@ -80,6 +80,63 @@ func (server *Server) getUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
+type updateUserRequest struct {
+	Username string `json:"username" binding:"required,alphanum"`
+	Password string `json:"password" binding:"omitempty,min=6"`
+	FullName string `json:"full_name" binding:"omitempty"`
+	Email    string `json:"email" binding:"omitempty,email"`
+}
+
+func (server *Server) updateUser(ctx *gin.Context) {
+	var request updateUserRequest
+	if err := ctx.ShouldBindJSON(&request); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	args := db.UpdateUserParams{
+		Username: request.Username,
+		FullName: sql.NullString{
+			String: request.FullName,
+			Valid:  request.FullName != "",
+		},
+		Email: sql.NullString{
+			String: request.Email,
+			Valid:  request.Email != "",
+		},
+	}
+
+	if request.Password != "" {
+		hashedPassword, err := util.HashPassword(request.Password)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		}
+
+		args.HashedPassword = sql.NullString{
+			String: hashedPassword,
+			Valid:  true,
+		}
+
+		args.PasswordChangedAt = sql.NullTime{
+			Time:  time.Now(),
+			Valid: true,
+		}
+	}
+
+	user, err := server.store.UpdateUser(ctx, args)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	response := newUserResponse(user)
+	ctx.JSON(http.StatusOK, response)
+}
+
 type userResponse struct {
 	Username          string    `json:"username"`
 	FullName          string    `json:"full_name"`
