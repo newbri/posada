@@ -8,6 +8,7 @@ import (
 	"github.com/newbri/posadamissportia/db"
 	"github.com/newbri/posadamissportia/db/util"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -98,18 +99,19 @@ func (server *Server) updateUser(ctx *gin.Context) {
 		Username: request.Username,
 		FullName: sql.NullString{
 			String: request.FullName,
-			Valid:  request.FullName != "",
+			Valid:  len(strings.TrimSpace(request.FullName)) > 0,
 		},
 		Email: sql.NullString{
 			String: request.Email,
-			Valid:  request.Email != "",
+			Valid:  len(strings.TrimSpace(request.Email)) > 0,
 		},
 	}
 
-	if request.Password != "" {
+	if len(strings.TrimSpace(request.Password)) > 0 {
 		hashedPassword, err := util.HashPassword(request.Password)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
 		}
 
 		args.HashedPassword = sql.NullString{
