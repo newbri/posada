@@ -154,6 +154,19 @@ func TestUpdateUserEmail(t *testing.T) {
 	require.Equal(t, user.HashedPassword, updatedUser.HashedPassword)
 }
 
+func TestDeleteUser(t *testing.T) {
+	store := NewStore(db)
+	user := createRandomUser(t)
+
+	mockDeleteUserDB(user)
+	updatedUser, err := store.DeleteUser(context.Background(), user.Username)
+
+	require.NoError(t, err)
+	require.Equal(t, user.Email, updatedUser.Email)
+	require.Equal(t, user.FullName, updatedUser.FullName)
+	require.Equal(t, user.HashedPassword, updatedUser.HashedPassword)
+}
+
 func mockUpdateUserDB(user User, args UpdateUserParams) {
 	rows := sqlmock.NewRows([]string{"username", "hashed_password", "full_name", "email", "password_changed_at", "created_at"}).
 		AddRow(user.Username,
@@ -166,5 +179,20 @@ func mockUpdateUserDB(user User, args UpdateUserParams) {
 
 	mocker.ExpectQuery(regexp.QuoteMeta(updateUser)).
 		WithArgs(args.HashedPassword, args.PasswordChangedAt, args.FullName, args.Email, args.Username).
+		WillReturnRows(rows)
+}
+
+func mockDeleteUserDB(user User) {
+	rows := sqlmock.NewRows([]string{"username", "hashed_password", "full_name", "email", "password_changed_at", "created_at"}).
+		AddRow(user.Username,
+			user.HashedPassword,
+			user.FullName,
+			user.Email,
+			user.PasswordChangedAt,
+			user.CreatedAt,
+		)
+
+	mocker.ExpectQuery(regexp.QuoteMeta(deleteUserQuery)).
+		WithArgs(user.Username).
 		WillReturnRows(rows)
 }
