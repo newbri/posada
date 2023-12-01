@@ -93,3 +93,20 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 	)
 	return user, err
 }
+
+const deleteUserQuery = `DELETE FROM users WHERE username = $1 
+     RETURNING username, hashed_password, full_name, email, password_changed_at, created_at;`
+
+func (q *Queries) DeleteUser(ctx context.Context, username string) (User, error) {
+	row := q.db.QueryRowContext(ctx, deleteUserQuery, username)
+	var user User
+	err := row.Scan(
+		&user.Username,
+		&user.HashedPassword,
+		&user.FullName,
+		&user.Email,
+		&user.PasswordChangedAt,
+		&user.CreatedAt,
+	)
+	return user, err
+}
