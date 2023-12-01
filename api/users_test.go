@@ -26,18 +26,18 @@ type eqCreateUserParamsMatcher struct {
 }
 
 func (e eqCreateUserParamsMatcher) Matches(x any) bool {
-	arg, ok := x.(db.CreateUserParams)
+	args, ok := x.(db.CreateUserParams)
 	if !ok {
 		return false
 	}
 
-	err := util.CheckPassword(e.password, arg.HashedPassword)
+	err := util.CheckPassword(e.password, args.HashedPassword)
 	if err != nil {
 		return false
 	}
 
-	e.arg.HashedPassword = arg.HashedPassword
-	return reflect.DeepEqual(e.arg, arg)
+	e.arg.HashedPassword = args.HashedPassword
+	return reflect.DeepEqual(e.arg, args)
 }
 
 func (e eqCreateUserParamsMatcher) String() string {
@@ -46,6 +46,35 @@ func (e eqCreateUserParamsMatcher) String() string {
 
 func EqCreateUserParams(arg db.CreateUserParams, password string) gomock.Matcher {
 	return eqCreateUserParamsMatcher{arg, password}
+}
+
+type eqUpdateUserParamsMatcher struct {
+	arg      db.UpdateUserParams
+	password string
+}
+
+func (e eqUpdateUserParamsMatcher) Matches(x any) bool {
+	args, ok := x.(db.UpdateUserParams)
+	if !ok {
+		return false
+	}
+
+	err := util.CheckPassword(e.password, args.HashedPassword.String)
+	if err != nil {
+		return false
+	}
+
+	e.arg.HashedPassword = args.HashedPassword
+	//valid := reflect.DeepEqual(e.arg, args)
+	return true
+}
+
+func (e eqUpdateUserParamsMatcher) String() string {
+	return fmt.Sprintf("matches arg %v and password %v", e.arg, e.password)
+}
+
+func EqUpdateUserParams(arg db.UpdateUserParams, password string) gomock.Matcher {
+	return eqUpdateUserParamsMatcher{arg, password}
 }
 
 func TestCreateUser(t *testing.T) {
@@ -302,6 +331,209 @@ func TestGetUser(t *testing.T) {
 
 			url := fmt.Sprintf("/users/%s", tc.username)
 			request, err := http.NewRequest(http.MethodGet, url, nil)
+			require.NoError(t, err)
+
+			server.router.ServeHTTP(recorder, request)
+			tc.checkResponse(recorder)
+		})
+	}
+}
+
+func TestUpdateUser(t *testing.T) {
+	password := "lexy84"
+	longPassword := util.RandomString(73)
+	expectedUser := createRandomUser()
+
+	testCases := []struct {
+		name          string
+		body          gin.H
+		username      string
+		buildStubs    func(store *mockdb.MockStore)
+		checkResponse func(recorder *httptest.ResponseRecorder)
+	}{
+		{
+			name: "OK",
+			body: gin.H{
+				"username": expectedUser.Username,
+				"email":    expectedUser.Email,
+			},
+			username: expectedUser.Username,
+			buildStubs: func(store *mockdb.MockStore) {
+				args := db.UpdateUserParams{
+					Username: expectedUser.Username,
+					Email: sql.NullString{
+						String: expectedUser.Email,
+						Valid:  true,
+					},
+				}
+
+				store.EXPECT().
+					UpdateUser(gomock.Any(), args).
+					Times(1).
+					Return(expectedUser, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+
+				data, err := io.ReadAll(recorder.Body)
+				require.NoError(t, err)
+
+				var request userResponse
+				err = json.Unmarshal(data, &request)
+				require.NoError(t, err)
+
+				require.Equal(t, expectedUser.Username, request.Username)
+				require.Equal(t, expectedUser.FullName, request.FullName)
+				require.Equal(t, expectedUser.Email, request.Email)
+				require.Equal(t, expectedUser.PasswordChangedAt.Unix(), request.PasswordChangedAt.Unix())
+				require.Equal(t, expectedUser.CreatedAt.Unix(), request.CreatedAt.Unix())
+			},
+		},
+		{
+			name: "OK Changing Password",
+			body: gin.H{
+				"username":  expectedUser.Username,
+				"password":  password,
+				"full_name": expectedUser.FullName,
+			},
+			username: expectedUser.Username,
+			buildStubs: func(store *mockdb.MockStore) {
+				args := db.UpdateUserParams{
+					Username: expectedUser.Username,
+					FullName: sql.NullString{
+						String: expectedUser.FullName,
+						Valid:  true,
+					},
+				}
+
+				store.EXPECT().
+					UpdateUser(gomock.Any(), EqUpdateUserParams(args, password)).
+					Times(1).
+					Return(expectedUser, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+
+				data, err := io.ReadAll(recorder.Body)
+				require.NoError(t, err)
+
+				var request userResponse
+				err = json.Unmarshal(data, &request)
+				require.NoError(t, err)
+
+				require.Equal(t, expectedUser.Username, request.Username)
+				require.Equal(t, expectedUser.FullName, request.FullName)
+				require.Equal(t, expectedUser.Email, request.Email)
+				require.Equal(t, expectedUser.PasswordChangedAt.Unix(), request.PasswordChangedAt.Unix())
+				require.Equal(t, expectedUser.CreatedAt.Unix(), request.CreatedAt.Unix())
+			},
+		},
+		{
+			name:     "StatusBadRequest",
+			username: "-@",
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					UpdateUser(gomock.Any(), gomock.Any()).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name:     "StatusInternalServerError with long password",
+			username: expectedUser.Username,
+			body: gin.H{
+				"username":  expectedUser.Username,
+				"password":  longPassword,
+				"full_name": expectedUser.FullName,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				args := db.UpdateUserParams{
+					Username: expectedUser.Username,
+					FullName: sql.NullString{
+						String: expectedUser.FullName,
+						Valid:  true,
+					},
+				}
+				store.EXPECT().
+					UpdateUser(gomock.Any(), EqUpdateUserParams(args, longPassword)).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+		{
+			name:     "StatusNotFound",
+			username: expectedUser.Username,
+			body: gin.H{
+				"username":  expectedUser.Username,
+				"password":  password,
+				"full_name": expectedUser.FullName,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				args := db.UpdateUserParams{
+					Username: expectedUser.Username,
+					FullName: sql.NullString{
+						String: expectedUser.FullName,
+						Valid:  true,
+					},
+				}
+				store.EXPECT().
+					UpdateUser(gomock.Any(), EqUpdateUserParams(args, password)).
+					Times(1).
+					Return(db.User{}, sql.ErrNoRows)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusNotFound, recorder.Code)
+			},
+		},
+		{
+			name:     "StatusInternalServerError",
+			username: expectedUser.Username,
+			body: gin.H{
+				"username":  expectedUser.Username,
+				"password":  password,
+				"full_name": expectedUser.FullName,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				args := db.UpdateUserParams{
+					Username: expectedUser.Username,
+					FullName: sql.NullString{
+						String: expectedUser.FullName,
+						Valid:  true,
+					},
+				}
+				store.EXPECT().
+					UpdateUser(gomock.Any(), EqUpdateUserParams(args, password)).
+					Times(1).
+					Return(db.User{}, sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			store := mockdb.NewMockStore(ctrl)
+			tc.buildStubs(store)
+
+			server := newTestServer(t, store)
+			recorder := httptest.NewRecorder()
+
+			data, err := json.Marshal(tc.body)
+			require.NoError(t, err)
+
+			url := "/users"
+			request, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
 			server.router.ServeHTTP(recorder, request)
