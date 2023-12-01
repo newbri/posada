@@ -25,6 +25,7 @@ func (server *Server) setupRouter() {
 	// add routes to router
 	router.POST("/users", server.createUser)
 	router.GET("/users/:username", server.getUser)
+	router.DELETE("/users/:username", server.deleteUser)
 	router.PUT("/users", server.updateUser)
 
 	server.router = router
