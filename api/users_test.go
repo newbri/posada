@@ -542,6 +542,104 @@ func TestUpdateUser(t *testing.T) {
 	}
 }
 
+func TestDeleteUser(t *testing.T) {
+	expectedUser := createRandomUser()
+
+	testCases := []struct {
+		name          string
+		username      string
+		buildStubs    func(store *mockdb.MockStore)
+		checkResponse func(recorder *httptest.ResponseRecorder)
+	}{
+		{
+			name:     "OK",
+			username: expectedUser.Username,
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					DeleteUser(gomock.Any(), expectedUser.Username).
+					Times(1).
+					Return(expectedUser, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+
+				data, err := io.ReadAll(recorder.Body)
+				require.NoError(t, err)
+
+				var request userResponse
+				err = json.Unmarshal(data, &request)
+				require.NoError(t, err)
+
+				require.Equal(t, expectedUser.Username, request.Username)
+				require.Equal(t, expectedUser.FullName, request.FullName)
+				require.Equal(t, expectedUser.Email, request.Email)
+				require.Equal(t, expectedUser.PasswordChangedAt.Unix(), request.PasswordChangedAt.Unix())
+				require.Equal(t, expectedUser.CreatedAt.Unix(), request.CreatedAt.Unix())
+			},
+		},
+		{
+			name:     "StatusBadRequest",
+			username: "-@",
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					DeleteUser(gomock.Any(), expectedUser.Username).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name:     "StatusNotFound",
+			username: expectedUser.Username,
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					DeleteUser(gomock.Any(), expectedUser.Username).
+					Times(1).
+					Return(db.User{}, sql.ErrNoRows)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusNotFound, recorder.Code)
+			},
+		},
+		{
+			name:     "StatusInternalServerError",
+			username: expectedUser.Username,
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					DeleteUser(gomock.Any(), expectedUser.Username).
+					Times(1).
+					Return(db.User{}, sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			store := mockdb.NewMockStore(ctrl)
+			tc.buildStubs(store)
+
+			server := newTestServer(t, store)
+			recorder := httptest.NewRecorder()
+
+			url := fmt.Sprintf("/users/%s", tc.username)
+			request, err := http.NewRequest(http.MethodDelete, url, nil)
+			require.NoError(t, err)
+
+			server.router.ServeHTTP(recorder, request)
+			tc.checkResponse(recorder)
+		})
+	}
+}
+
 func createRandomUser() db.User {
 	hashedPassword, err := util.HashPassword(util.RandomString(6))
 	if err != nil {
