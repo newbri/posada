@@ -10,13 +10,19 @@ import (
 	"github.com/newbri/posadamissportia/api"
 	"github.com/newbri/posadamissportia/db"
 	"github.com/newbri/posadamissportia/db/util"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"os"
 )
 
 func main() {
 	config, err := util.LoadConfig(".")
 	if err != nil {
 		log.Fatal().Msg("cannot load config")
+	}
+
+	if config.Environment == "development" {
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
 
 	conn, err := sql.Open(config.DBDriver, config.DBSource)
