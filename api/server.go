@@ -37,6 +37,7 @@ func (server *Server) setupRouter() {
 
 	// add routes to router
 	authRoutes.GET("/users/:username", server.getUser)
+	authRoutes.GET("/users/info", server.getUserInfo)
 	authRoutes.DELETE("/users/:username", server.deleteUser)
 	authRoutes.PUT("/users", server.updateUser)
 

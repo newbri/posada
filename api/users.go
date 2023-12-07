@@ -3,11 +3,13 @@ package api
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"github.com/newbri/posadamissportia/db"
 	"github.com/newbri/posadamissportia/db/util"
+	"github.com/newbri/posadamissportia/token"
 	"net/http"
 	"strings"
 	"time"
@@ -258,5 +260,29 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		RefreshTokenExpiresAt: refreshPayload.ExpiredAt,
 		User:                  newUserResponse(user),
 	}
+	ctx.JSON(http.StatusOK, response)
+}
+
+func (server *Server) getUserInfo(ctx *gin.Context) {
+	data, ok := ctx.Get(authorizationPayloadKey)
+	if !ok {
+		err := fmt.Errorf("unauthorized user")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
+	payload, _ := data.(*token.Payload)
+
+	user, err := server.store.GetUser(ctx, payload.Username)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	response := newUserResponse(user)
 	ctx.JSON(http.StatusOK, response)
 }
