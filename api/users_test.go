@@ -11,6 +11,7 @@ import (
 	"github.com/newbri/posadamissportia/db"
 	mockdb "github.com/newbri/posadamissportia/db/mock"
 	"github.com/newbri/posadamissportia/db/util"
+	"github.com/newbri/posadamissportia/token"
 	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
@@ -249,6 +250,7 @@ func TestGetUser(t *testing.T) {
 		username      string
 		buildStubs    func(store *mockdb.MockStore)
 		checkResponse func(recorder *httptest.ResponseRecorder)
+		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 	}{
 		{
 			name:     "OK",
@@ -275,6 +277,9 @@ func TestGetUser(t *testing.T) {
 				require.Equal(t, expectedUser.PasswordChangedAt.Unix(), request.PasswordChangedAt.Unix())
 				require.Equal(t, expectedUser.CreatedAt.Unix(), request.CreatedAt.Unix())
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
+			},
 		},
 		{
 			name:     "StatusBadRequest",
@@ -286,6 +291,9 @@ func TestGetUser(t *testing.T) {
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
 			},
 		},
 		{
@@ -300,6 +308,9 @@ func TestGetUser(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
+			},
 		},
 		{
 			name:     "StatusInternalServerError",
@@ -312,6 +323,9 @@ func TestGetUser(t *testing.T) {
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
 			},
 		},
 	}
@@ -333,6 +347,7 @@ func TestGetUser(t *testing.T) {
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
+			tc.setupAuth(t, request, server.tokenMaker)
 			server.router.ServeHTTP(recorder, request)
 			tc.checkResponse(recorder)
 		})
@@ -350,6 +365,7 @@ func TestUpdateUser(t *testing.T) {
 		username      string
 		buildStubs    func(store *mockdb.MockStore)
 		checkResponse func(recorder *httptest.ResponseRecorder)
+		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 	}{
 		{
 			name: "OK",
@@ -387,6 +403,9 @@ func TestUpdateUser(t *testing.T) {
 				require.Equal(t, expectedUser.Email, request.Email)
 				require.Equal(t, expectedUser.PasswordChangedAt.Unix(), request.PasswordChangedAt.Unix())
 				require.Equal(t, expectedUser.CreatedAt.Unix(), request.CreatedAt.Unix())
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
 			},
 		},
 		{
@@ -427,6 +446,9 @@ func TestUpdateUser(t *testing.T) {
 				require.Equal(t, expectedUser.PasswordChangedAt.Unix(), request.PasswordChangedAt.Unix())
 				require.Equal(t, expectedUser.CreatedAt.Unix(), request.CreatedAt.Unix())
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
+			},
 		},
 		{
 			name:     "StatusBadRequest",
@@ -438,6 +460,9 @@ func TestUpdateUser(t *testing.T) {
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
 			},
 		},
 		{
@@ -462,6 +487,9 @@ func TestUpdateUser(t *testing.T) {
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
 			},
 		},
 		{
@@ -488,6 +516,9 @@ func TestUpdateUser(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
+			},
 		},
 		{
 			name:     "StatusInternalServerError",
@@ -513,6 +544,9 @@ func TestUpdateUser(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
+			},
 		},
 	}
 
@@ -536,6 +570,7 @@ func TestUpdateUser(t *testing.T) {
 			request, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
+			tc.setupAuth(t, request, server.tokenMaker)
 			server.router.ServeHTTP(recorder, request)
 			tc.checkResponse(recorder)
 		})
@@ -550,6 +585,7 @@ func TestDeleteUser(t *testing.T) {
 		username      string
 		buildStubs    func(store *mockdb.MockStore)
 		checkResponse func(recorder *httptest.ResponseRecorder)
+		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 	}{
 		{
 			name:     "OK",
@@ -576,6 +612,9 @@ func TestDeleteUser(t *testing.T) {
 				require.Equal(t, expectedUser.PasswordChangedAt.Unix(), request.PasswordChangedAt.Unix())
 				require.Equal(t, expectedUser.CreatedAt.Unix(), request.CreatedAt.Unix())
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
+			},
 		},
 		{
 			name:     "StatusBadRequest",
@@ -587,6 +626,9 @@ func TestDeleteUser(t *testing.T) {
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
 			},
 		},
 		{
@@ -601,6 +643,9 @@ func TestDeleteUser(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
+			},
 		},
 		{
 			name:     "StatusInternalServerError",
@@ -613,6 +658,9 @@ func TestDeleteUser(t *testing.T) {
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
 			},
 		},
 	}
@@ -634,6 +682,7 @@ func TestDeleteUser(t *testing.T) {
 			request, err := http.NewRequest(http.MethodDelete, url, nil)
 			require.NoError(t, err)
 
+			tc.setupAuth(t, request, server.tokenMaker)
 			server.router.ServeHTTP(recorder, request)
 			tc.checkResponse(recorder)
 		})
