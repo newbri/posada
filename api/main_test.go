@@ -15,7 +15,6 @@ func newTestServer(t *testing.T, store db.Store) *Server {
 	if err != nil {
 		log.Fatal().Msg("cannot load config")
 	}
-	//config := util.Config{}
 	server, err := NewServer(config, store)
 	require.NoError(t, err)
 

@@ -23,17 +23,11 @@ func (payload *Payload) Valid() error {
 	return nil
 }
 
-func NewPayload(username string, duration time.Duration) (*Payload, error) {
-	tokenID, err := uuid.NewRandom()
-	if err != nil {
-		return nil, err
-	}
-
-	payload := &Payload{
-		ID:        tokenID,
+func NewPayload(username string, duration time.Duration) *Payload {
+	return &Payload{
+		ID:        uuid.New(),
 		Username:  username,
 		IssuedAt:  time.Now(),
 		ExpiredAt: time.Now().Add(duration),
 	}
-	return payload, nil
 }
