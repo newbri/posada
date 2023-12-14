@@ -16,12 +16,12 @@ import (
 )
 
 func main() {
-	config, err := util.LoadConfig(".")
+	config, err := util.LoadConfig("app.yaml", "dev")
 	if err != nil {
 		log.Fatal().Msg("cannot load config")
 	}
 
-	if config.Environment == "development" {
+	if config.Name == "development" {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
 
@@ -50,7 +50,7 @@ func runDBMigration(migrationURL string, dbSource string) {
 	log.Info().Msg("db migration successfully")
 }
 
-func runGinServer(config util.Config, store db.Store) {
+func runGinServer(config *util.Config, store db.Store) {
 	server, err := api.NewServer(config, store)
 	if err != nil {
 		log.Fatal().Msg("cannot create server")
