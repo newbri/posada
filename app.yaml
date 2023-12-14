@@ -1,5 +1,5 @@
 config:
-    - dev:
+    dev:
         name: development
         db_driver: postgres
         db_source: postgresql://root:secret@localhost:5432/posada?sslmode=disable
@@ -9,8 +9,18 @@ config:
         access_token_duration: 15m
         refresh_token_duration: 24h
         token_symmetric_key: 12345678901234567890123456789012
-    - test:
+    test:
         name: test
+        db_driver: postgres
+        db_source: postgresql://root:secret@localhost:5432/posada?sslmode=disable
+        migration_url: file://db/migration
+        http_server_address: 0.0.0.0:8080
+        http_redis_address: 0.0.0.0:6379
+        access_token_duration: 15m
+        refresh_token_duration: 24h
+        token_symmetric_key: 12345678901234567890123456789012
+    prod:
+        name: production
         db_driver: postgres
         db_source: postgresql://root:secret@localhost:5432/posada?sslmode=disable
         migration_url: file://db/migration
