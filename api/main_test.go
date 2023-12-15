@@ -11,7 +11,7 @@ import (
 )
 
 func newTestServer(t *testing.T, store db.Store) *Server {
-	config, err := util.LoadConfig("../")
+	config, err := util.LoadConfig("../app.yaml", "test")
 	if err != nil {
 		log.Fatal().Msg("cannot load config")
 	}
