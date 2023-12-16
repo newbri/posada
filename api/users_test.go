@@ -693,36 +693,60 @@ func TestLoginUser(t *testing.T) {
 
 	testCases := []struct {
 		name          string
+		env           string
 		body          gin.H
-		buildStubs    func(store *mockdb.MockStore)
+		buildStubs    func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker)
 		checkResponse func(recorder *httptest.ResponseRecorder)
 	}{
 		{
 			name: "OK",
+			env:  "test",
 			body: gin.H{
 				"username": expectedUser.Username,
 				"password": password,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			buildStubs: func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker) {
 				store.EXPECT().
-					GetUser(gomock.Any(), gomock.Eq(expectedUser.Username)).
+					GetUser(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(expectedUser, nil)
 				store.EXPECT().
 					CreateSession(gomock.Any(), gomock.Any()).
 					Times(1)
+
+				accessToken, accessPayload, err := createToken(
+					server.config.TokenSymmetricKey,
+					expectedUser.Username,
+					server.config.AccessTokenDuration,
+				)
+				maker.EXPECT().
+					CreateToken(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(accessToken, accessPayload, err)
+
+				refreshToken, refreshPayload, err := createToken(
+					server.config.TokenSymmetricKey,
+					expectedUser.Username,
+					server.config.RefreshTokenDuration,
+				)
+				maker.EXPECT().
+					CreateToken(gomock.Any(), gomock.Any()).
+					Times(2).
+					Return(refreshToken, refreshPayload, err).
+					AnyTimes()
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
 			},
 		},
 		{
+			env:  "test",
 			name: "UserNotFound",
 			body: gin.H{
 				"username": "NotFound",
 				"password": password,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			buildStubs: func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker) {
 				store.EXPECT().
 					GetUser(gomock.Any(), gomock.Any()).
 					Times(1).
@@ -733,12 +757,13 @@ func TestLoginUser(t *testing.T) {
 			},
 		},
 		{
+			env:  "test",
 			name: "IncorrectPassword",
 			body: gin.H{
 				"username": expectedUser.Username,
 				"password": "incorrect",
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			buildStubs: func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker) {
 				store.EXPECT().
 					GetUser(gomock.Any(), gomock.Eq(expectedUser.Username)).
 					Times(1).
@@ -749,12 +774,13 @@ func TestLoginUser(t *testing.T) {
 			},
 		},
 		{
+			env:  "test",
 			name: "InternalError",
 			body: gin.H{
 				"username": expectedUser.Username,
 				"password": password,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			buildStubs: func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker) {
 				store.EXPECT().
 					GetUser(gomock.Any(), gomock.Any()).
 					Times(1).
@@ -765,12 +791,13 @@ func TestLoginUser(t *testing.T) {
 			},
 		},
 		{
+			env:  "test",
 			name: "StatusBadRequest",
 			body: gin.H{
 				"username":  "NotFound",
 				"password1": password,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			buildStubs: func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker) {
 				store.EXPECT().
 					GetUser(gomock.Any(), gomock.Any()).
 					Times(0)
@@ -780,18 +807,26 @@ func TestLoginUser(t *testing.T) {
 			},
 		},
 		{
+			env:  "test",
 			name: "InvalidUsername",
 			body: gin.H{
-				"username": "invalid-user#1",
+				"username": expectedUser.Username,
 				"password": password,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			buildStubs: func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker) {
+				duration := time.Minute * 15
+
 				store.EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
-					Times(0)
+					GetUser(gomock.Any(), gomock.Eq(expectedUser.Username)).
+					Times(1).
+					Return(expectedUser, nil)
+				maker.EXPECT().
+					CreateToken(expectedUser.Username, duration).
+					Times(1).
+					Return("", nil, sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 		},
 	}
@@ -804,10 +839,11 @@ func TestLoginUser(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
-			tc.buildStubs(store)
+			maker := mockdb.NewMockMaker(ctrl)
 
-			server := newTestServer(t, store)
+			server := newServer(t, store, maker, tc.env)
 			recorder := httptest.NewRecorder()
+			tc.buildStubs(server, store, maker)
 
 			// Marshal body data to JSON
 			data, err := json.Marshal(tc.body)
@@ -854,4 +890,12 @@ func createRandomUserAndPassword() (db.User, string) {
 		PasswordChangedAt: time.Now(),
 		CreatedAt:         time.Now(),
 	}, password
+}
+
+func createToken(symmetricKey string, username string, duration time.Duration) (string, *token.Payload, error) {
+	tokenMaker, err := token.NewPasetoMaker(symmetricKey)
+	if err != nil {
+		return "", nil, err
+	}
+	return tokenMaker.CreateToken(username, duration)
 }
