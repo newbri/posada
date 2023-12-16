@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/newbri/posadamissportia/db"
 	"github.com/newbri/posadamissportia/db/util"
@@ -15,11 +14,7 @@ type Server struct {
 	tokenMaker token.Maker
 }
 
-func NewServer(config *util.Config, store db.Store) (*Server, error) {
-	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
-	if err != nil {
-		return nil, fmt.Errorf("cannot create token maker: %w", err)
-	}
+func NewServer(store db.Store, tokenMaker token.Maker, config *util.Config) (*Server, error) {
 	server := &Server{store: store, tokenMaker: tokenMaker, config: config}
 
 	server.setupRouter()
