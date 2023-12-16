@@ -13,4 +13,7 @@ migratedown:
 mock:
 	mockgen -package mockdb -destination db/mock/store.go github.com/newbri/posadamissportia/db Store
 
+mocktoken:
+	mockgen -package mockdb -destination db/mock/token.go github.com/newbri/posadamissportia/token Maker
+
 .PHONY: todo createdb migrateup migratedown mock
