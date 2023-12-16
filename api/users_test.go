@@ -862,6 +862,48 @@ func TestLoginUser(t *testing.T) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 		},
+		{
+			env:  "test",
+			name: "Session Error",
+			body: gin.H{
+				"username": expectedUser.Username,
+				"password": password,
+			},
+			buildStubs: func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker) {
+				store.EXPECT().
+					GetUser(gomock.Any(), gomock.Eq(expectedUser.Username)).
+					Times(1).
+					Return(expectedUser, nil)
+				store.EXPECT().
+					CreateSession(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(db.Session{}, sql.ErrNoRows)
+
+				accessToken, accessPayload, err := createToken(
+					server.config.TokenSymmetricKey,
+					expectedUser.Username,
+					server.config.AccessTokenDuration,
+				)
+				maker.EXPECT().
+					CreateToken(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(accessToken, accessPayload, err)
+
+				refreshToken, refreshPayload, err := createToken(
+					server.config.TokenSymmetricKey,
+					expectedUser.Username,
+					server.config.RefreshTokenDuration,
+				)
+				maker.EXPECT().
+					CreateToken(gomock.Any(), gomock.Any()).
+					Times(2).
+					Return(refreshToken, refreshPayload, err).
+					AnyTimes()
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
 	}
 
 	for i := range testCases {
