@@ -10,6 +10,7 @@ import (
 	"github.com/newbri/posadamissportia/api"
 	"github.com/newbri/posadamissportia/db"
 	"github.com/newbri/posadamissportia/db/util"
+	"github.com/newbri/posadamissportia/token"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"os"
@@ -34,7 +35,12 @@ func main() {
 
 	store := db.NewStore(conn)
 
-	runGinServer(config, store)
+	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
+	if err != nil {
+		log.Fatal().Msg("cannot create token paseto")
+	}
+
+	runGinServer(store, tokenMaker, config)
 }
 
 func runDBMigration(migrationURL string, dbSource string) {
@@ -50,8 +56,8 @@ func runDBMigration(migrationURL string, dbSource string) {
 	log.Info().Msg("db migration successfully")
 }
 
-func runGinServer(config *util.Config, store db.Store) {
-	server, err := api.NewServer(config, store)
+func runGinServer(store db.Store, maker token.Maker, config *util.Config) {
+	server, err := api.NewServer(store, maker, config)
 	if err != nil {
 		log.Fatal().Msg("cannot create server")
 	}
