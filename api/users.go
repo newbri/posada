@@ -3,7 +3,6 @@ package api
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
@@ -264,12 +263,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 }
 
 func (server *Server) getUserInfo(ctx *gin.Context) {
-	data, ok := ctx.Get(authorizationPayloadKey)
-	if !ok {
-		err := fmt.Errorf("unauthorized user")
-		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
-		return
-	}
+	data, _ := ctx.Get(authorizationPayloadKey)
 
 	payload, _ := data.(*token.Payload)
 	user, err := server.store.GetUser(ctx, payload.Username)
