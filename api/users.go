@@ -272,7 +272,6 @@ func (server *Server) getUserInfo(ctx *gin.Context) {
 	}
 
 	payload, _ := data.(*token.Payload)
-
 	user, err := server.store.GetUser(ctx, payload.Username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
