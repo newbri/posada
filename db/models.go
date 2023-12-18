@@ -29,4 +29,6 @@ type Role struct {
 	ID          uuid.UUID `json:"id"`
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
+	UpdatedAt   time.Time `json:"expired_at"`
+	CreatedAt   time.Time `json:"created_at"`
 }
