@@ -12,4 +12,5 @@ type Querier interface {
 	DeleteUser(ctx context.Context, username string) (User, error)
 	GetSession(ctx context.Context, id uuid.UUID) (Session, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
+	CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error)
 }
