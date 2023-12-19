@@ -8,7 +8,7 @@ import (
 const createRole = `
 INSERT INTO role (id, name, description) 
 VALUES ($1,$2,$3)
-RETURNING id,name,description,created_at,updated_at;
+RETURNING id,name,description,created_at,updated_at
 `
 
 type CreateRoleParams struct {
