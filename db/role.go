@@ -37,8 +37,8 @@ func (q *Queries) CreateRole(ctx context.Context, arg CreateRoleParams) (Role, e
 }
 
 type ListRoleParams struct {
-	Limit  int32 `json:"limit" binding:"required,gte=1"`
-	Offset int32 `json:"offset" binding:"min=0"`
+	Limit  int32 `json:"limit""`
+	Offset int32 `json:"offset"`
 }
 
 const getAllRole = `
