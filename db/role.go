@@ -74,3 +74,20 @@ func (q *Queries) GetAllRole(ctx context.Context, arg ListRoleParams) ([]*Role, 
 	}
 	return items, nil
 }
+
+const getRoleQuery = `
+	SELECT id,name,description,created_at,updated_at FROM role WHERE id = $1;
+`
+
+func (q *Queries) GetRole(ctx context.Context, id uuid.UUID) (*Role, error) {
+	row := q.db.QueryRowContext(ctx, getRoleQuery, id)
+	var role Role
+	err := row.Scan(
+		&role.ID,
+		&role.Name,
+		&role.Description,
+		&role.CreatedAt,
+		&role.UpdatedAt,
+	)
+	return &role, err
+}

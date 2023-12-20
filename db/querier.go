@@ -14,4 +14,5 @@ type Querier interface {
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error)
 	GetAllRole(ctx context.Context, arg ListRoleParams) ([]*Role, error)
+	GetRole(ctx context.Context, id uuid.UUID) (*Role, error)
 }
