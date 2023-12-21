@@ -8,6 +8,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/newbri/posadamissportia/db"
 	"net/http"
+	"time"
 )
 
 type createRoleRequest struct {
@@ -78,6 +79,14 @@ type idURI struct {
 	ID string `uri:"id" binding:"required,alphanum"`
 }
 
+type roleResponse struct {
+	ExternalID  string    `json:"external_id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
 func (server *Server) getRole(ctx *gin.Context) {
 	var request idURI
 	if err := ctx.ShouldBindUri(&request); err != nil {
@@ -95,5 +104,18 @@ func (server *Server) getRole(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, role)
+	if role == nil {
+		ctx.JSON(http.StatusNotFound, errorResponse(errors.New("role not found")))
+		return
+	}
+
+	roleResp := roleResponse{
+		ExternalID:  role.ExternalID,
+		Name:        role.Name,
+		Description: role.Description,
+		UpdatedAt:   role.UpdatedAt,
+		CreatedAt:   role.CreatedAt,
+	}
+
+	ctx.JSON(http.StatusOK, roleResp)
 }
