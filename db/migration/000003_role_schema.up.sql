@@ -9,4 +9,4 @@ CREATE TABLE IF NOT EXISTS "role"
 );
 
 CREATE SEQUENCE IF NOT EXISTS "role_sequence" START 101;
-CREATE UNIQUE INDEX IF NOT EXISTS "external_id_index" ON "role" ("external_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "role_external_id_index" ON "role" ("external_id");
