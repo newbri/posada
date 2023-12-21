@@ -7,9 +7,9 @@ import (
 )
 
 const createRole = `
-INSERT INTO role (id, name, description, external_id) 
+INSERT INTO role (internal_id, name, description, external_id) 
 VALUES ($1,$2,$3, CONCAT('URE',nextval('role_sequence')))
-RETURNING id,name,description,external_id,created_at,updated_at
+RETURNING internal_id,name,description,external_id,created_at,updated_at
 `
 
 type CreateRoleParams struct {
@@ -28,7 +28,7 @@ func (q *Queries) CreateRole(ctx context.Context, arg CreateRoleParams) (Role, e
 	)
 	var role Role
 	err := row.Scan(
-		&role.ID,
+		&role.InternalID,
 		&role.Name,
 		&role.Description,
 		&role.ExternalID,
@@ -44,7 +44,7 @@ type ListRoleParams struct {
 }
 
 const getAllRole = `
-SELECT id,name,description,external_id,created_at,updated_at FROM role LIMIT $1 OFFSET $2;
+SELECT internal_id,name,description,external_id,created_at,updated_at FROM role LIMIT $1 OFFSET $2;
 `
 
 func (q *Queries) GetAllRole(ctx context.Context, arg ListRoleParams) ([]*Role, error) {
@@ -63,7 +63,7 @@ func (q *Queries) GetAllRole(ctx context.Context, arg ListRoleParams) ([]*Role, 
 	for rows.Next() {
 		var role Role
 		if err := rows.Scan(
-			&role.ID,
+			&role.InternalID,
 			&role.Name,
 			&role.Description,
 			&role.ExternalID,
@@ -84,14 +84,14 @@ func (q *Queries) GetAllRole(ctx context.Context, arg ListRoleParams) ([]*Role, 
 }
 
 const getRoleQuery = `
-	SELECT id,name,description,external_id,created_at,updated_at FROM role WHERE external_id = $1;
+	SELECT internal_id,name,description,external_id,created_at,updated_at FROM role WHERE external_id = $1;
 `
 
 func (q *Queries) GetRole(ctx context.Context, externalId string) (*Role, error) {
 	row := q.db.QueryRowContext(ctx, getRoleQuery, externalId)
 	var role Role
 	err := row.Scan(
-		&role.ID,
+		&role.InternalID,
 		&role.Name,
 		&role.Description,
 		&role.ExternalID,

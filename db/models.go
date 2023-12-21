@@ -26,7 +26,7 @@ type Session struct {
 }
 
 type Role struct {
-	ID          uuid.UUID `json:"id"`
+	InternalID  uuid.UUID `json:"id"`
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
 	ExternalID  string    `json:"external_id"`
