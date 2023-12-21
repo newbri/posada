@@ -2,13 +2,14 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"github.com/google/uuid"
 )
 
 const createRole = `
-INSERT INTO role (id, name, description) 
-VALUES ($1,$2,$3)
-RETURNING id,name,description,created_at,updated_at
+INSERT INTO role (id, name, description, external_id) 
+VALUES ($1,$2,$3, CONCAT('URE',nextval('role_sequence')))
+RETURNING id,name,description,external_id,created_at,updated_at
 `
 
 type CreateRoleParams struct {
@@ -30,6 +31,7 @@ func (q *Queries) CreateRole(ctx context.Context, arg CreateRoleParams) (Role, e
 		&role.ID,
 		&role.Name,
 		&role.Description,
+		&role.ExternalID,
 		&role.CreatedAt,
 		&role.UpdatedAt,
 	)
@@ -42,7 +44,7 @@ type ListRoleParams struct {
 }
 
 const getAllRole = `
-SELECT id,name,description,created_at,updated_at FROM role LIMIT $1 OFFSET $2;
+SELECT id,name,description,external_id,created_at,updated_at FROM role LIMIT $1 OFFSET $2;
 `
 
 func (q *Queries) GetAllRole(ctx context.Context, arg ListRoleParams) ([]*Role, error) {
@@ -50,7 +52,12 @@ func (q *Queries) GetAllRole(ctx context.Context, arg ListRoleParams) ([]*Role, 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+
+		}
+	}(rows)
 
 	var items []*Role
 	for rows.Next() {
@@ -59,6 +66,7 @@ func (q *Queries) GetAllRole(ctx context.Context, arg ListRoleParams) ([]*Role, 
 			&role.ID,
 			&role.Name,
 			&role.Description,
+			&role.ExternalID,
 			&role.CreatedAt,
 			&role.UpdatedAt,
 		); err != nil {
@@ -76,16 +84,17 @@ func (q *Queries) GetAllRole(ctx context.Context, arg ListRoleParams) ([]*Role, 
 }
 
 const getRoleQuery = `
-	SELECT id,name,description,created_at,updated_at FROM role WHERE id = $1;
+	SELECT id,name,description,external_id,created_at,updated_at FROM role WHERE external_id = $1;
 `
 
-func (q *Queries) GetRole(ctx context.Context, id uuid.UUID) (*Role, error) {
-	row := q.db.QueryRowContext(ctx, getRoleQuery, id)
+func (q *Queries) GetRole(ctx context.Context, externalId string) (*Role, error) {
+	row := q.db.QueryRowContext(ctx, getRoleQuery, externalId)
 	var role Role
 	err := row.Scan(
 		&role.ID,
 		&role.Name,
 		&role.Description,
+		&role.ExternalID,
 		&role.CreatedAt,
 		&role.UpdatedAt,
 	)
