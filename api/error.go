@@ -16,4 +16,5 @@ var (
 	ErrWrongSessionToken = errors.New("mismatched session token")
 	ErrExpiredSession    = errors.New("session has expired")
 	ErrTokenCreation     = errors.New("an issued occurs when creating token")
+	ErrNoRole            = errors.New("role not found")
 )

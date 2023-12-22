@@ -124,7 +124,7 @@ func (server *Server) getRole(ctx *gin.Context) {
 	}
 
 	if role == nil {
-		ctx.JSON(http.StatusNotFound, errorResponse(errors.New("role not found")))
+		ctx.JSON(http.StatusNotFound, errorResponse(ErrNoRole))
 		return
 	}
 
