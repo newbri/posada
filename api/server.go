@@ -14,11 +14,11 @@ type Server struct {
 	tokenMaker token.Maker
 }
 
-func NewServer(store db.Store, tokenMaker token.Maker, config *util.Config) (*Server, error) {
+func NewServer(store db.Store, tokenMaker token.Maker, config *util.Config) *Server {
 	server := &Server{store: store, tokenMaker: tokenMaker, config: config}
 
 	server.setupRouter()
-	return server, nil
+	return server
 }
 
 func (server *Server) setupRouter() {

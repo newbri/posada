@@ -57,12 +57,9 @@ func runDBMigration(migrationURL string, dbSource string) {
 }
 
 func runGinServer(store db.Store, maker token.Maker, config *util.Config) {
-	server, err := api.NewServer(store, maker, config)
-	if err != nil {
-		log.Fatal().Msg("cannot create server")
-	}
+	server := api.NewServer(store, maker, config)
 
-	err = server.Start(config.HTTPServerAddress)
+	err := server.Start(config.HTTPServerAddress)
 	if err != nil {
 		log.Fatal().Msg("cannot start server")
 	}

@@ -225,7 +225,7 @@ func TestCreateUser(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store)
+			server := newTestServer(store)
 			recorder := httptest.NewRecorder()
 
 			data, err := json.Marshal(tc.body)
@@ -339,7 +339,7 @@ func TestGetUser(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store)
+			server := newTestServer(store)
 			recorder := httptest.NewRecorder()
 
 			url := fmt.Sprintf("/users/%s", tc.username)
@@ -559,7 +559,7 @@ func TestUpdateUser(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store)
+			server := newTestServer(store)
 			recorder := httptest.NewRecorder()
 
 			data, err := json.Marshal(tc.body)
@@ -674,7 +674,7 @@ func TestDeleteUser(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store)
+			server := newTestServer(store)
 			recorder := httptest.NewRecorder()
 
 			url := fmt.Sprintf("/users/%s", tc.username)
@@ -916,7 +916,7 @@ func TestLoginUser(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			maker := mockdb.NewMockMaker(ctrl)
 
-			server := newServer(t, store, maker, tc.env)
+			server := newServer(store, maker, tc.env)
 			recorder := httptest.NewRecorder()
 			tc.buildStubs(server, store, maker)
 
@@ -1017,7 +1017,7 @@ func TestUserInfo(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store)
+			server := newTestServer(store)
 			recorder := httptest.NewRecorder()
 
 			url := "/users/info"

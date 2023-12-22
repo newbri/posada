@@ -6,12 +6,11 @@ import (
 	"github.com/newbri/posadamissportia/db/util"
 	"github.com/newbri/posadamissportia/token"
 	"github.com/rs/zerolog/log"
-	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 )
 
-func newTestServer(t *testing.T, store db.Store) *Server {
+func newTestServer(store db.Store) *Server {
 	config, err := util.LoadConfig("../app.yaml", "test")
 	if err != nil {
 		log.Fatal().Msg("cannot load config")
@@ -21,21 +20,16 @@ func newTestServer(t *testing.T, store db.Store) *Server {
 		return nil
 	}
 
-	server, err := NewServer(store, tokenMaker, config)
-	require.NoError(t, err)
-
-	return server
+	return NewServer(store, tokenMaker, config)
 }
 
-func newServer(t *testing.T, store db.Store, tokenMaker token.Maker, env string) *Server {
+func newServer(store db.Store, tokenMaker token.Maker, env string) *Server {
 	config, err := util.LoadConfig("../app.yaml", env)
 	if err != nil {
 		log.Fatal().Msg("cannot load config")
 	}
-	server, err := NewServer(store, tokenMaker, config)
-	require.NoError(t, err)
 
-	return server
+	return NewServer(store, tokenMaker, config)
 }
 
 func TestMain(m *testing.M) {
