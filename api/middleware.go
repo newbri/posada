@@ -18,6 +18,7 @@ const (
 var ErrInvalidAuthHeaderFormat = errors.New("invalid authorization header format")
 var ErrAuthHeaderNotProvided = errors.New("authorization header is not provided")
 
+// authMiddleware is a Gin middleware function that performs authentication based on a provided token.
 func authMiddleware(tokenMarker token.Maker) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		authorizationHeader := ctx.GetHeader(authorizationHeaderKey)
