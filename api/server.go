@@ -1,7 +1,6 @@
 package api
 
 import (
-	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/newbri/posadamissportia/db"
 	"github.com/newbri/posadamissportia/db/util"
@@ -49,6 +48,6 @@ func (server *Server) Start(address string) error {
 	return server.router.Run(address)
 }
 
-func errorResponse(errStr string) gin.H {
-	return gin.H{"error": errors.New(errStr)}
+func errorResponse(err error) gin.H {
+	return gin.H{"error": err.Error()}
 }
