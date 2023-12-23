@@ -8,6 +8,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/newbri/posadamissportia/db"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -137,4 +138,43 @@ func (server *Server) getRole(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, roleResp)
+}
+
+func (server *Server) updateRole(ctx *gin.Context) {
+	type updateRoleRequest struct {
+		ExternalID  string `json:"external_id" binding:"required,alphanum"`
+		Name        string `json:"name" binding:"omitempty"`
+		Description string `json:"description" binding:"omitempty"`
+	}
+
+	var request updateRoleRequest
+	if err := ctx.ShouldBindJSON(&request); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(ErrBindToJSON))
+		return
+	}
+
+	args := db.UpdateRoleParams{
+		ExternalID:  request.ExternalID,
+		Name:        sql.NullString{String: request.Name, Valid: len(strings.TrimSpace(request.Name)) > 0},
+		Description: sql.NullString{String: request.Description, Valid: len(strings.TrimSpace(request.Description)) > 0},
+	}
+
+	role, err := server.store.UpdateRole(ctx, args)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			ctx.JSON(http.StatusNotFound, errorResponse(ErrNoRow))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(ErrInternalServer))
+		return
+	}
+
+	response := roleResponse{
+		ExternalID:  role.ExternalID,
+		Name:        role.Name,
+		Description: role.Description,
+		UpdatedAt:   role.UpdatedAt,
+		CreatedAt:   role.CreatedAt,
+	}
+	ctx.JSON(http.StatusOK, response)
 }
