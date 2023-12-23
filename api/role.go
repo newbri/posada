@@ -157,6 +157,7 @@ func (server *Server) updateRole(ctx *gin.Context) {
 		ExternalID:  request.ExternalID,
 		Name:        sql.NullString{String: request.Name, Valid: len(strings.TrimSpace(request.Name)) > 0},
 		Description: sql.NullString{String: request.Description, Valid: len(strings.TrimSpace(request.Description)) > 0},
+		UpdateAt:    time.Now(),
 	}
 
 	role, err := server.store.UpdateRole(ctx, args)

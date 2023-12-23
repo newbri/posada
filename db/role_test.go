@@ -3,27 +3,30 @@ package db
 import (
 	"context"
 	"database/sql"
+	"github.com/DATA-DOG/go-sqlmock"
+	"regexp"
 	"testing"
+	"time"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
 func TestQueries_UpdateRole(t *testing.T) {
 	ctx := context.Background()
-	db, _ := sql.Open("sqlite3", ":memory:")
-
 	q := New(db)
 
-	// Setting up test data
-	roleParams := CreateRoleParams{
-		ID:          uuid.New(),
-		Name:        "Admin",
-		Description: "Administrator role",
-	}
+	updateDate := time.Now()
 
-	_, err := q.CreateRole(ctx, roleParams)
-	require.NoError(t, err)
+	role := createRole()
+	rows := sqlmock.NewRows([]string{"internal_id", "name", "description", "external_id", "updated_at", "created_at"}).
+		AddRow(
+			role.InternalID,
+			role.Name,
+			role.Description,
+			role.ExternalID,
+			updateDate,
+			role.CreatedAt,
+		)
 
 	tests := []struct {
 		name    string
@@ -33,18 +36,20 @@ func TestQueries_UpdateRole(t *testing.T) {
 		{
 			name: "Update Existing Role",
 			arg: UpdateRoleParams{
-				Name:        sql.NullString{String: "SuperAdmin", Valid: true},
-				Description: sql.NullString{String: "Super Administrator role", Valid: true},
-				ExternalID:  roleParams.ID.String(),
+				Name:        sql.NullString{String: role.Name, Valid: true},
+				Description: sql.NullString{String: role.Description, Valid: true},
+				ExternalID:  role.ExternalID,
+				UpdateAt:    updateDate,
 			},
 			wantErr: false,
 		},
 		{
 			name: "Invalid External ID",
 			arg: UpdateRoleParams{
-				Name:        sql.NullString{String: "User", Valid: true},
-				Description: sql.NullString{String: "User role", Valid: true},
+				Name:        sql.NullString{String: role.Name, Valid: true},
+				Description: sql.NullString{String: role.Description, Valid: true},
 				ExternalID:  "invalid-id",
+				UpdateAt:    updateDate,
 			},
 			wantErr: true,
 		},
@@ -52,8 +57,9 @@ func TestQueries_UpdateRole(t *testing.T) {
 			name: "Empty Name",
 			arg: UpdateRoleParams{
 				Name:        sql.NullString{String: "", Valid: false},
-				Description: sql.NullString{String: "User role", Valid: true},
-				ExternalID:  roleParams.ID.String(),
+				Description: sql.NullString{String: role.Description, Valid: true},
+				ExternalID:  role.ExternalID,
+				UpdateAt:    updateDate,
 			},
 			wantErr: true,
 		},
@@ -61,6 +67,10 @@ func TestQueries_UpdateRole(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			mocker.ExpectQuery(regexp.QuoteMeta(updateRoleQuery)).
+				WithArgs(tt.arg.Name, tt.arg.Description, tt.arg.UpdateAt, tt.arg.ExternalID).
+				WillReturnRows(rows)
+
 			_, err := q.UpdateRole(ctx, tt.arg)
 
 			if tt.wantErr {

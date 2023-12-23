@@ -106,6 +106,7 @@ type UpdateRoleParams struct {
 	ExternalID  string         `json:"external_id"`
 	Name        sql.NullString `json:"name"`
 	Description sql.NullString `json:"description"`
+	UpdateAt    time.Time      `json:"-"`
 }
 
 const updateRoleQuery = `
@@ -121,7 +122,7 @@ func (q *Queries) UpdateRole(ctx context.Context, arg UpdateRoleParams) (*Role, 
 	row := q.db.QueryRowContext(ctx, updateRoleQuery,
 		arg.Name,
 		arg.Description,
-		time.Now(),
+		arg.UpdateAt,
 		arg.ExternalID,
 	)
 	var role Role

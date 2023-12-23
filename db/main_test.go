@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 	"github.com/newbri/posadamissportia/db/util"
 	"github.com/rs/zerolog/log"
@@ -42,5 +43,16 @@ func createRandomUser(t *testing.T) User {
 		Email:             util.RandomEmail(),
 		PasswordChangedAt: time.Now(),
 		CreatedAt:         time.Now(),
+	}
+}
+
+func createRole() *Role {
+	return &Role{
+		InternalID:  uuid.New(),
+		Name:        util.RandomString(6),
+		Description: util.RandomString(10),
+		ExternalID:  util.RandomString(8),
+		UpdatedAt:   time.Now(),
+		CreatedAt:   time.Now(),
 	}
 }
