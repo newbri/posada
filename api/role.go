@@ -178,3 +178,30 @@ func (server *Server) updateRole(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, response)
 }
+
+func (server *Server) deleteRole(ctx *gin.Context) {
+	var request idURI
+	if err := ctx.ShouldBindUri(&request); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(ErrShouldBindUri))
+		return
+	}
+
+	role, err := server.store.DeleteRole(ctx, request.ID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			ctx.JSON(http.StatusNotFound, errorResponse(ErrNoRow))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(ErrInternalServer))
+		return
+	}
+
+	response := roleResponse{
+		ExternalID:  role.ExternalID,
+		Name:        role.Name,
+		Description: role.Description,
+		UpdatedAt:   role.UpdatedAt,
+		CreatedAt:   role.CreatedAt,
+	}
+	ctx.JSON(http.StatusOK, response)
+}

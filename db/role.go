@@ -135,3 +135,20 @@ func (q *Queries) UpdateRole(ctx context.Context, arg UpdateRoleParams) (*Role, 
 	)
 	return &role, err
 }
+
+const deleteRoleQuery = `DELETE FROM role WHERE external_id = $1 
+     RETURNING internal_id, name, description, external_id, created_at, updated_at;`
+
+func (q *Queries) DeleteRole(ctx context.Context, externalID string) (*Role, error) {
+	row := q.db.QueryRowContext(ctx, deleteRoleQuery, externalID)
+	var role Role
+	err := row.Scan(
+		&role.InternalID,
+		&role.Name,
+		&role.Description,
+		&role.ExternalID,
+		&role.CreatedAt,
+		&role.UpdatedAt,
+	)
+	return &role, err
+}
