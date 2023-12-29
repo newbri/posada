@@ -51,3 +51,29 @@ func authMiddleware(tokenMarker token.Maker) gin.HandlerFunc {
 		ctx.Next()
 	}
 }
+
+func pasetoAuthAdmin() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		data, exist := ctx.Get(authorizationPayloadKey)
+		if !exist {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication data is required"})
+			ctx.Abort()
+			return
+		}
+
+		payload, ok := data.(*token.Payload)
+		if !ok {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication payload is required"})
+			ctx.Abort()
+			return
+		}
+
+		if payload.Role.Name != "admin" {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Only Administrator is allowed to perform this action"})
+			ctx.Abort()
+			return
+		}
+
+		ctx.Next()
+	}
+}

@@ -28,12 +28,6 @@ func (server *Server) setupRouter() {
 	router.POST("/users/login", server.loginUser)
 	router.POST("/tokens/renew_access", server.renewAccessToken)
 
-	router.POST("/role", server.createRole)
-	router.GET("/role/:id", server.getRole)
-	router.POST("/role/all", server.getAllRole)
-	router.PUT("/role", server.updateRole)
-	router.DELETE("/role/:id", server.deleteRole)
-
 	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
 
 	// add routes to router
@@ -41,6 +35,15 @@ func (server *Server) setupRouter() {
 	authRoutes.GET("/users/info", server.getUserInfo)
 	authRoutes.DELETE("/users/:username", server.deleteUser)
 	authRoutes.PUT("/users", server.updateUser)
+
+	// admin
+	adminRoutes := router.Group("/admin")
+	adminRoutes.Use(authMiddleware(server.tokenMaker)).Use(pasetoAuthAdmin())
+	adminRoutes.POST("/role", server.createRole)
+	adminRoutes.GET("/role/:id", server.getRole)
+	adminRoutes.POST("/role/all", server.getAllRole)
+	adminRoutes.PUT("/role", server.updateRole)
+	adminRoutes.DELETE("/role/:id", server.deleteRole)
 
 	server.router = router
 }

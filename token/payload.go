@@ -3,6 +3,7 @@ package token
 import (
 	"errors"
 	"github.com/google/uuid"
+	"github.com/newbri/posadamissportia/db"
 	"time"
 )
 
@@ -14,6 +15,7 @@ type Payload struct {
 	Username  string    `json:"username"`
 	IssuedAt  time.Time `json:"issued_at"`
 	ExpiredAt time.Time `json:"expired_at"`
+	Role      *db.Role  `json:"role"`
 }
 
 func (payload *Payload) Valid() error {
@@ -23,11 +25,12 @@ func (payload *Payload) Valid() error {
 	return nil
 }
 
-func NewPayload(username string, duration time.Duration) *Payload {
+func NewPayload(username string, role *db.Role, duration time.Duration) *Payload {
 	return &Payload{
 		ID:        uuid.New(),
 		Username:  username,
 		IssuedAt:  time.Now(),
 		ExpiredAt: time.Now().Add(duration),
+		Role:      role,
 	}
 }
