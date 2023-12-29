@@ -13,6 +13,7 @@ const (
 	authorizationHeaderKey  = "authorization"
 	authorizationTypeBearer = "bearer"
 	authorizationPayloadKey = "authorization_payload"
+	adminRole               = "admin"
 )
 
 var ErrInvalidAuthHeaderFormat = errors.New("invalid authorization header format")
@@ -68,7 +69,7 @@ func pasetoAuthAdmin() gin.HandlerFunc {
 			return
 		}
 
-		if payload.Role.Name != "admin" {
+		if payload.Role.Name != adminRole {
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Only Administrator is allowed to perform this action"})
 			ctx.Abort()
 			return
