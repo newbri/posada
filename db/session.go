@@ -30,7 +30,7 @@ type CreateSessionParams struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
-func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error) {
+func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (*Session, error) {
 	row := q.db.QueryRowContext(ctx, createSession,
 		arg.ID,
 		arg.Username,
@@ -41,18 +41,18 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (S
 		arg.ExpiredAt,
 		arg.CreatedAt,
 	)
-	var i Session
+	var session Session
 	err := row.Scan(
-		&i.ID,
-		&i.Username,
-		&i.RefreshToken,
-		&i.UserAgent,
-		&i.ClientIp,
-		&i.IsBlocked,
-		&i.ExpiredAt,
-		&i.CreatedAt,
+		&session.ID,
+		&session.Username,
+		&session.RefreshToken,
+		&session.UserAgent,
+		&session.ClientIp,
+		&session.IsBlocked,
+		&session.ExpiredAt,
+		&session.CreatedAt,
 	)
-	return i, err
+	return &session, err
 }
 
 const getSession = `-- name: GetSession :one
@@ -62,18 +62,18 @@ WHERE id = $1
 LIMIT 1
 `
 
-func (q *Queries) GetSession(ctx context.Context, id uuid.UUID) (Session, error) {
+func (q *Queries) GetSession(ctx context.Context, id uuid.UUID) (*Session, error) {
 	row := q.db.QueryRowContext(ctx, getSession, id)
-	var i Session
+	var session Session
 	err := row.Scan(
-		&i.ID,
-		&i.Username,
-		&i.RefreshToken,
-		&i.UserAgent,
-		&i.ClientIp,
-		&i.IsBlocked,
-		&i.ExpiredAt,
-		&i.CreatedAt,
+		&session.ID,
+		&session.Username,
+		&session.RefreshToken,
+		&session.UserAgent,
+		&session.ClientIp,
+		&session.IsBlocked,
+		&session.ExpiredAt,
+		&session.CreatedAt,
 	)
-	return i, err
+	return &session, err
 }

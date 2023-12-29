@@ -86,10 +86,10 @@ SET hashed_password = coalesce($1, hashed_password),
     full_name = coalesce($3, full_name),
     email = coalesce($4, email)
 WHERE username = $5
-RETURNING username, hashed_password, full_name, email, password_changed_at, created_at;
+RETURNING username, hashed_password, full_name, email, password_changed_at, created_at, role_id;
 `
 
-func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (*User, error) {
 	row := q.db.QueryRowContext(ctx, updateUser,
 		arg.HashedPassword,
 		arg.PasswordChangedAt,
@@ -98,6 +98,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		arg.Username,
 	)
 	var user User
+	var role Role
 	err := row.Scan(
 		&user.Username,
 		&user.HashedPassword,
@@ -105,16 +106,22 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&user.Email,
 		&user.PasswordChangedAt,
 		&user.CreatedAt,
+		&role.InternalID,
 	)
-	return user, err
+	if err != nil {
+		return nil, err
+	}
+	user.Role, err = q.GetRoleByUUID(ctx, role.InternalID)
+	return &user, err
 }
 
 const deleteUserQuery = `DELETE FROM users WHERE username = $1 
-     RETURNING username, hashed_password, full_name, email, password_changed_at, created_at;`
+     RETURNING username, hashed_password, full_name, email, password_changed_at, created_at, role_id;`
 
-func (q *Queries) DeleteUser(ctx context.Context, username string) (User, error) {
+func (q *Queries) DeleteUser(ctx context.Context, username string) (*User, error) {
 	row := q.db.QueryRowContext(ctx, deleteUserQuery, username)
 	var user User
+	var role Role
 	err := row.Scan(
 		&user.Username,
 		&user.HashedPassword,
@@ -122,6 +129,11 @@ func (q *Queries) DeleteUser(ctx context.Context, username string) (User, error)
 		&user.Email,
 		&user.PasswordChangedAt,
 		&user.CreatedAt,
+		&role.InternalID,
 	)
-	return user, err
+	if err != nil {
+		return nil, err
+	}
+	user.Role, err = q.GetRoleByUUID(ctx, role.InternalID)
+	return &user, err
 }

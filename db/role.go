@@ -19,7 +19,7 @@ type CreateRoleParams struct {
 	Description string    `json:"description"`
 }
 
-func (q *Queries) CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error) {
+func (q *Queries) CreateRole(ctx context.Context, arg CreateRoleParams) (*Role, error) {
 	row := q.db.QueryRowContext(
 		ctx,
 		createRoleQuery,
@@ -36,7 +36,7 @@ func (q *Queries) CreateRole(ctx context.Context, arg CreateRoleParams) (Role, e
 		&role.CreatedAt,
 		&role.UpdatedAt,
 	)
-	return role, err
+	return &role, err
 }
 
 type ListRoleParams struct {
