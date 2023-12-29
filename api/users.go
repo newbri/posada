@@ -138,7 +138,7 @@ func (server *Server) updateUser(ctx *gin.Context) {
 		return
 	}
 
-	response := newUserResponse(&user)
+	response := newUserResponse(user)
 	ctx.JSON(http.StatusOK, response)
 }
 
@@ -179,7 +179,7 @@ func (server *Server) deleteUser(ctx *gin.Context) {
 		return
 	}
 
-	response := newUserResponse(&user)
+	response := newUserResponse(user)
 	ctx.JSON(http.StatusOK, response)
 }
 
