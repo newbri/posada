@@ -37,10 +37,10 @@ func (m *MockStore) EXPECT() *MockStoreMockRecorder {
 }
 
 // CreateRole mocks base method.
-func (m *MockStore) CreateRole(arg0 context.Context, arg1 db.CreateRoleParams) (db.Role, error) {
+func (m *MockStore) CreateRole(arg0 context.Context, arg1 db.CreateRoleParams) (*db.Role, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateRole", arg0, arg1)
-	ret0, _ := ret[0].(db.Role)
+	ret0, _ := ret[0].(*db.Role)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -52,10 +52,10 @@ func (mr *MockStoreMockRecorder) CreateRole(arg0, arg1 interface{}) *gomock.Call
 }
 
 // CreateSession mocks base method.
-func (m *MockStore) CreateSession(arg0 context.Context, arg1 db.CreateSessionParams) (db.Session, error) {
+func (m *MockStore) CreateSession(arg0 context.Context, arg1 db.CreateSessionParams) (*db.Session, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateSession", arg0, arg1)
-	ret0, _ := ret[0].(db.Session)
+	ret0, _ := ret[0].(*db.Session)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -67,10 +67,10 @@ func (mr *MockStoreMockRecorder) CreateSession(arg0, arg1 interface{}) *gomock.C
 }
 
 // CreateUser mocks base method.
-func (m *MockStore) CreateUser(arg0 context.Context, arg1 db.CreateUserParams) (db.User, error) {
+func (m *MockStore) CreateUser(arg0 context.Context, arg1 db.CreateUserParams) (*db.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateUser", arg0, arg1)
-	ret0, _ := ret[0].(db.User)
+	ret0, _ := ret[0].(*db.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -97,10 +97,10 @@ func (mr *MockStoreMockRecorder) DeleteRole(arg0, arg1 interface{}) *gomock.Call
 }
 
 // DeleteUser mocks base method.
-func (m *MockStore) DeleteUser(arg0 context.Context, arg1 string) (db.User, error) {
+func (m *MockStore) DeleteUser(arg0 context.Context, arg1 string) (*db.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteUser", arg0, arg1)
-	ret0, _ := ret[0].(db.User)
+	ret0, _ := ret[0].(*db.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -141,11 +141,26 @@ func (mr *MockStoreMockRecorder) GetRole(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRole", reflect.TypeOf((*MockStore)(nil).GetRole), arg0, arg1)
 }
 
+// GetRoleByUUID mocks base method.
+func (m *MockStore) GetRoleByUUID(arg0 context.Context, arg1 uuid.UUID) (*db.Role, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRoleByUUID", arg0, arg1)
+	ret0, _ := ret[0].(*db.Role)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRoleByUUID indicates an expected call of GetRoleByUUID.
+func (mr *MockStoreMockRecorder) GetRoleByUUID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRoleByUUID", reflect.TypeOf((*MockStore)(nil).GetRoleByUUID), arg0, arg1)
+}
+
 // GetSession mocks base method.
-func (m *MockStore) GetSession(arg0 context.Context, arg1 uuid.UUID) (db.Session, error) {
+func (m *MockStore) GetSession(arg0 context.Context, arg1 uuid.UUID) (*db.Session, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSession", arg0, arg1)
-	ret0, _ := ret[0].(db.Session)
+	ret0, _ := ret[0].(*db.Session)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -157,10 +172,10 @@ func (mr *MockStoreMockRecorder) GetSession(arg0, arg1 interface{}) *gomock.Call
 }
 
 // GetUser mocks base method.
-func (m *MockStore) GetUser(arg0 context.Context, arg1 string) (db.User, error) {
+func (m *MockStore) GetUser(arg0 context.Context, arg1 string) (*db.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUser", arg0, arg1)
-	ret0, _ := ret[0].(db.User)
+	ret0, _ := ret[0].(*db.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -187,10 +202,10 @@ func (mr *MockStoreMockRecorder) UpdateRole(arg0, arg1 interface{}) *gomock.Call
 }
 
 // UpdateUser mocks base method.
-func (m *MockStore) UpdateUser(arg0 context.Context, arg1 db.UpdateUserParams) (db.User, error) {
+func (m *MockStore) UpdateUser(arg0 context.Context, arg1 db.UpdateUserParams) (*db.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateUser", arg0, arg1)
-	ret0, _ := ret[0].(db.User)
+	ret0, _ := ret[0].(*db.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
