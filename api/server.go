@@ -33,7 +33,6 @@ func (server *Server) setupRouter() {
 	// add routes to router
 	authRoutes.GET("/users/:username", server.getUser)
 	authRoutes.GET("/users/info", server.getUserInfo)
-	authRoutes.DELETE("/users/:username", server.deleteUser)
 	authRoutes.PUT("/users", server.updateUser)
 
 	// admin
@@ -44,6 +43,7 @@ func (server *Server) setupRouter() {
 	adminRoutes.POST("/role/all", server.getAllRole)
 	adminRoutes.PUT("/role", server.updateRole)
 	adminRoutes.DELETE("/role/:id", server.deleteRole)
+	adminRoutes.DELETE("/users/:username", server.deleteUser)
 
 	server.router = router
 }
