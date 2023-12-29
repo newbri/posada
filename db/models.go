@@ -12,6 +12,7 @@ type User struct {
 	Email             string    `json:"email"`
 	PasswordChangedAt time.Time `json:"password_changed_at"`
 	CreatedAt         time.Time `json:"created_at"`
+	Role              *Role     `json:"role"`
 }
 
 type Session struct {
@@ -26,7 +27,7 @@ type Session struct {
 }
 
 type Role struct {
-	InternalID  uuid.UUID `json:"id"`
+	InternalID  uuid.UUID `json:"-"`
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
 	ExternalID  string    `json:"external_id"`

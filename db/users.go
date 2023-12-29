@@ -3,29 +3,33 @@ package db
 import (
 	"context"
 	"database/sql"
+	"github.com/google/uuid"
 )
 
 const createUser = `
-INSERT INTO users (username, hashed_password, full_name, email) 
-VALUES ($1,$2,$3,$4)
-RETURNING username,hashed_password,full_name,email,password_changed_at,created_at
+INSERT INTO users (username, hashed_password, full_name, email, role_id) 
+VALUES ($1,$2,$3,$4,$5)
+RETURNING username,hashed_password,full_name,email,password_changed_at,created_at,role_id
 `
 
 type CreateUserParams struct {
-	Username       string `json:"username"`
-	HashedPassword string `json:"hashed_password"`
-	FullName       string `json:"full_name"`
-	Email          string `json:"email"`
+	Username       string    `json:"username"`
+	HashedPassword string    `json:"hashed_password"`
+	FullName       string    `json:"full_name"`
+	Email          string    `json:"email"`
+	RoleID         uuid.UUID `json:"-"`
 }
 
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (*User, error) {
 	row := q.db.QueryRowContext(ctx, createUser,
 		arg.Username,
 		arg.HashedPassword,
 		arg.FullName,
 		arg.Email,
+		arg.RoleID,
 	)
 	var user User
+	var role Role
 	err := row.Scan(
 		&user.Username,
 		&user.HashedPassword,
@@ -33,18 +37,24 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&user.Email,
 		&user.PasswordChangedAt,
 		&user.CreatedAt,
+		&role.InternalID,
 	)
-	return user, err
+	if err != nil {
+		return nil, err
+	}
+	user.Role, err = q.GetRoleByUUID(ctx, role.InternalID)
+	return &user, err
 }
 
 const getUser = `
-SELECT username, hashed_password, full_name, email, password_changed_at, created_at 
+SELECT username, hashed_password, full_name, email, password_changed_at, created_at, role_id 
 FROM users WHERE username = $1;
 `
 
-func (q *Queries) GetUser(ctx context.Context, username string) (User, error) {
+func (q *Queries) GetUser(ctx context.Context, username string) (*User, error) {
 	row := q.db.QueryRowContext(ctx, getUser, username)
 	var user User
+	var role Role
 	err := row.Scan(
 		&user.Username,
 		&user.HashedPassword,
@@ -52,8 +62,13 @@ func (q *Queries) GetUser(ctx context.Context, username string) (User, error) {
 		&user.Email,
 		&user.PasswordChangedAt,
 		&user.CreatedAt,
+		&role.InternalID,
 	)
-	return user, err
+	if err != nil {
+		return nil, err
+	}
+	user.Role, err = q.GetRoleByUUID(ctx, role.InternalID)
+	return &user, err
 }
 
 type UpdateUserParams struct {

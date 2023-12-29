@@ -99,6 +99,24 @@ func (q *Queries) GetRole(ctx context.Context, externalId string) (*Role, error)
 	return &role, err
 }
 
+const getRoleQueryByUUID = `
+	SELECT internal_id,name,description,external_id,created_at,updated_at FROM role WHERE internal_id = $1;
+`
+
+func (q *Queries) GetRoleByUUID(ctx context.Context, internalId uuid.UUID) (*Role, error) {
+	row := q.db.QueryRowContext(ctx, getRoleQueryByUUID, internalId)
+	var role Role
+	err := row.Scan(
+		&role.InternalID,
+		&role.Name,
+		&role.Description,
+		&role.ExternalID,
+		&role.CreatedAt,
+		&role.UpdatedAt,
+	)
+	return &role, err
+}
+
 type UpdateRoleParams struct {
 	ExternalID  string         `json:"external_id"`
 	Name        sql.NullString `json:"name"`

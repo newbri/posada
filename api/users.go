@@ -38,6 +38,7 @@ func (server *Server) createUser(ctx *gin.Context) {
 		HashedPassword: hashedPassword,
 		FullName:       req.FullName,
 		Email:          req.Email,
+		RoleID:         uuid.MustParse("018cb346-945e-77d3-87b3-181d1b50a382"),
 	}
 
 	user, err := server.store.CreateUser(ctx, arg)
@@ -137,7 +138,7 @@ func (server *Server) updateUser(ctx *gin.Context) {
 		return
 	}
 
-	response := newUserResponse(user)
+	response := newUserResponse(&user)
 	ctx.JSON(http.StatusOK, response)
 }
 
@@ -147,15 +148,17 @@ type userResponse struct {
 	Email             string    `json:"email"`
 	PasswordChangedAt time.Time `json:"password_changed_at"`
 	CreatedAt         time.Time `json:"created_at"`
+	Role              *db.Role  `json:"role"`
 }
 
-func newUserResponse(user db.User) userResponse {
+func newUserResponse(user *db.User) userResponse {
 	return userResponse{
 		Username:          user.Username,
 		FullName:          user.FullName,
 		Email:             user.Email,
 		PasswordChangedAt: user.PasswordChangedAt,
 		CreatedAt:         user.CreatedAt,
+		Role:              user.Role,
 	}
 }
 
@@ -176,7 +179,7 @@ func (server *Server) deleteUser(ctx *gin.Context) {
 		return
 	}
 
-	response := newUserResponse(user)
+	response := newUserResponse(&user)
 	ctx.JSON(http.StatusOK, response)
 }
 
