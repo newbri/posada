@@ -24,26 +24,28 @@ func NewServer(store db.Store, tokenMaker token.Maker, config *util.Config) *Ser
 func (server *Server) setupRouter() {
 	router := gin.Default()
 
-	router.POST("/users", server.createUser)
-	router.POST("/users/login", server.loginUser)
-	router.POST("/tokens/renew_access", server.renewAccessToken)
+	apiGroup := router.Group("/api")
 
-	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker)).Use(pasetoAuthCustomer())
+	apiGroup.POST("/users", server.createUser)
+	apiGroup.POST("/users/login", server.loginUser)
+	apiGroup.POST("/tokens/renew_access", server.renewAccessToken)
 
-	// add routes to router
-	authRoutes.GET("/users/:username", server.getUser)
-	authRoutes.GET("/users/info", server.getUserInfo)
-	authRoutes.PUT("/users", server.updateUser)
+	authGroup := apiGroup.Group("/auth")
+
+	authGroup.Use(authMiddleware(server.tokenMaker))
+	authGroup.GET("/users/info", server.getUserInfo)
+	authGroup.PUT("/users", server.updateUser)
 
 	// admin
-	adminRoutes := router.Group("/admin")
-	adminRoutes.Use(authMiddleware(server.tokenMaker)).Use(pasetoAuthAdmin())
-	adminRoutes.POST("/role", server.createRole)
-	adminRoutes.GET("/role/:id", server.getRole)
-	adminRoutes.POST("/role/all", server.getAllRole)
-	adminRoutes.PUT("/role", server.updateRole)
-	adminRoutes.DELETE("/role/:id", server.deleteRole)
-	adminRoutes.DELETE("/users/:username", server.deleteUser)
+	adminGroup := authGroup.Group("/admin")
+	adminGroup.Use(pasetoAuthRole(RoleAdmin))
+	adminGroup.POST("/role", server.createRole)
+	adminGroup.GET("/role/:id", server.getRole)
+	adminGroup.POST("/role/all", server.getAllRole)
+	adminGroup.PUT("/role", server.updateRole)
+	adminGroup.DELETE("/role/:id", server.deleteRole)
+	adminGroup.GET("/users/:username", server.getUser)
+	adminGroup.DELETE("/users/:username", server.deleteUser)
 
 	server.router = router
 }
