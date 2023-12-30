@@ -13,7 +13,9 @@ const (
 	authorizationHeaderKey  = "authorization"
 	authorizationTypeBearer = "bearer"
 	authorizationPayloadKey = "authorization_payload"
-	adminRole               = "admin"
+	RoleAdmin               = "admin"
+	RoleCustomer            = "customer"
+	RoleVisitor             = "visitor"
 )
 
 var ErrInvalidAuthHeaderFormat = errors.New("invalid authorization header format")
@@ -69,7 +71,33 @@ func pasetoAuthAdmin() gin.HandlerFunc {
 			return
 		}
 
-		if payload.Role.Name != adminRole {
+		if payload.Role.Name != RoleAdmin {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Only Administrator is allowed to perform this action"})
+			ctx.Abort()
+			return
+		}
+
+		ctx.Next()
+	}
+}
+
+func pasetoAuthCustomer() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		data, exist := ctx.Get(authorizationPayloadKey)
+		if !exist {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication data is required"})
+			ctx.Abort()
+			return
+		}
+
+		payload, ok := data.(*token.Payload)
+		if !ok {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication payload is required"})
+			ctx.Abort()
+			return
+		}
+
+		if payload.Role.Name != RoleAdmin && payload.Role.Name != RoleCustomer {
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Only Administrator is allowed to perform this action"})
 			ctx.Abort()
 			return
