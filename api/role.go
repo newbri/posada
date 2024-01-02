@@ -20,7 +20,7 @@ type createRoleRequest struct {
 func (server *Server) createRole(ctx *gin.Context) {
 	var request createRoleRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(ErrBindToJSON))
+		ctx.Error(ErrBindToJSON)
 		return
 	}
 
@@ -37,11 +37,11 @@ func (server *Server) createRole(ctx *gin.Context) {
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code.Name() {
 			case "unique_violation":
-				ctx.JSON(http.StatusForbidden, errorResponse(ErrUniqueViolation))
+				ctx.Error(ErrUniqueViolation)
 				return
 			}
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(ErrInternalServer))
+		ctx.Error(ErrInternalServer)
 		return
 	}
 
@@ -62,7 +62,7 @@ func (server *Server) getAllRole(ctx *gin.Context) {
 		Offset int32 `json:"offset" binding:"min=0"`
 	}
 	if err := ctx.ShouldBindJSON(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(ErrBindToJSON))
+		ctx.Error(ErrInternalServer)
 		return
 	}
 
@@ -74,10 +74,10 @@ func (server *Server) getAllRole(ctx *gin.Context) {
 	role, err := server.store.GetAllRole(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			ctx.JSON(http.StatusNotFound, errorResponse(ErrNoRow))
+			ctx.Error(ErrNoRow)
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(ErrInternalServer))
+		ctx.Error(ErrInternalServer)
 		return
 	}
 
@@ -110,22 +110,22 @@ type roleResponse struct {
 func (server *Server) getRole(ctx *gin.Context) {
 	var request idURI
 	if err := ctx.ShouldBindUri(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(ErrShouldBindUri))
+		ctx.Error(ErrShouldBindUri)
 		return
 	}
 
 	role, err := server.store.GetRole(ctx, request.ID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			ctx.JSON(http.StatusNotFound, errorResponse(ErrNoRow))
+			ctx.Error(ErrNoRow)
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(ErrInternalServer))
+		ctx.Error(ErrInternalServer)
 		return
 	}
 
 	if role == nil {
-		ctx.JSON(http.StatusNotFound, errorResponse(ErrNoRole))
+		ctx.Error(ErrNoRole)
 		return
 	}
 
@@ -149,7 +149,7 @@ func (server *Server) updateRole(ctx *gin.Context) {
 
 	var request updateRoleRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(ErrBindToJSON))
+		ctx.Error(ErrBindToJSON)
 		return
 	}
 
@@ -163,10 +163,10 @@ func (server *Server) updateRole(ctx *gin.Context) {
 	role, err := server.store.UpdateRole(ctx, args)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			ctx.JSON(http.StatusNotFound, errorResponse(ErrNoRow))
+			ctx.Error(ErrNoRow)
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(ErrInternalServer))
+		ctx.Error(ErrInternalServer)
 		return
 	}
 
@@ -183,14 +183,14 @@ func (server *Server) updateRole(ctx *gin.Context) {
 func (server *Server) deleteRole(ctx *gin.Context) {
 	var request idURI
 	if err := ctx.ShouldBindUri(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(ErrShouldBindUri))
+		ctx.Error(ErrShouldBindUri)
 		return
 	}
 
 	role, err := server.store.DeleteRole(ctx, request.ID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			ctx.JSON(http.StatusNotFound, errorResponse(ErrNoRow))
+			ctx.Error(ErrNoRow)
 			return
 		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(ErrInternalServer))

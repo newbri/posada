@@ -80,3 +80,48 @@ func pasetoAuthRole(role string) gin.HandlerFunc {
 		ctx.Next()
 	}
 }
+
+func errorHandlingMiddleware() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		ctx.Next()
+
+		// only run if there are some errors to handle
+		if len(ctx.Errors) > 0 {
+			for _, err := range ctx.Errors {
+				switch {
+				case errors.Is(err.Err, ErrBindToJSON):
+					ctx.JSON(http.StatusBadRequest, errorResponse(ErrBindToJSON))
+				case errors.Is(err.Err, ErrUniqueViolation):
+					ctx.JSON(http.StatusForbidden, errorResponse(ErrUniqueViolation))
+				case errors.Is(err.Err, ErrInternalServer):
+					ctx.JSON(http.StatusInternalServerError, errorResponse(ErrInternalServer))
+				case errors.Is(err.Err, ErrNoRow):
+					ctx.JSON(http.StatusNotFound, errorResponse(ErrNoRow))
+				case errors.Is(err.Err, ErrShouldBindUri):
+					ctx.JSON(http.StatusBadRequest, errorResponse(ErrShouldBindUri))
+				case errors.Is(err.Err, ErrVerifyToken):
+					ctx.JSON(http.StatusUnauthorized, errorResponse(ErrVerifyToken))
+				case errors.Is(err.Err, ErrSession):
+					ctx.JSON(http.StatusInternalServerError, errorResponse(ErrSession))
+				case errors.Is(err.Err, ErrBlockedSession):
+					ctx.JSON(http.StatusUnauthorized, errorResponse(ErrBlockedSession))
+				case errors.Is(err.Err, ErrWrongUserSession):
+					ctx.JSON(http.StatusUnauthorized, errorResponse(ErrWrongUserSession))
+				case errors.Is(err.Err, ErrWrongSessionToken):
+					ctx.JSON(http.StatusUnauthorized, errorResponse(ErrWrongSessionToken))
+				case errors.Is(err.Err, ErrExpiredSession):
+					ctx.JSON(http.StatusUnauthorized, errorResponse(ErrExpiredSession))
+				case errors.Is(err.Err, ErrTokenCreation):
+					ctx.JSON(http.StatusInternalServerError, errorResponse(ErrTokenCreation))
+				case errors.Is(err.Err, ErrPasswordMistMach):
+					ctx.JSON(http.StatusUnauthorized, errorResponse(ErrPasswordMistMach))
+				case errors.Is(err.Err, ErrNoRole):
+					ctx.JSON(http.StatusNotFound, errorResponse(ErrNoRole))
+				}
+			}
+
+			// once we handled all the errors, clear them from the gin context
+			ctx.Errors.Last().Meta = nil
+		}
+	}
+}
