@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
 	"net/http"
 	"time"
 )
@@ -20,16 +21,14 @@ type renewAccessTokenResponse struct {
 func (server *Server) renewAccessToken(ctx *gin.Context) {
 	var request renewAccessTokenRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
-		ctx.Error(ErrBindToJSON)
-		//ctx.JSON(http.StatusBadRequest, errorResponse(ErrBindToJSON))
-		//return
+		log.Info().Msg(ctx.Error(err).Error())
+		return
 	}
 
 	refreshPayload, err := server.tokenMaker.VerifyToken(request.RefreshToken)
 	if err != nil {
-		ctx.Error(ErrVerifyToken)
-		//ctx.JSON(http.StatusUnauthorized, errorResponse(ErrVerifyToken))
-		//return
+		log.Info().Msg(ctx.Error(ErrVerifyToken).Error())
+		return
 	}
 
 	session, err := server.store.GetSession(ctx, refreshPayload.ID)
@@ -39,33 +38,28 @@ func (server *Server) renewAccessToken(ctx *gin.Context) {
 			//ctx.JSON(http.StatusNotFound, errorResponse(ErrNoRow))
 			//return
 		}
-		ctx.Error(ErrSession)
-		//ctx.JSON(http.StatusInternalServerError, errorResponse(ErrSession))
-		//return
+		log.Info().Msg(ctx.Error(ErrSession).Error())
+		return
 	}
 
 	if session.IsBlocked {
-		ctx.Error(ErrBlockedSession)
-		//ctx.JSON(http.StatusUnauthorized, errorResponse(ErrBlockedSession))
-		//return
+		log.Info().Msg(ctx.Error(ErrBlockedSession).Error())
+		return
 	}
 
 	if session.Username != refreshPayload.Username {
-		ctx.Error(ErrWrongUserSession)
-		//ctx.JSON(http.StatusUnauthorized, errorResponse(ErrWrongUserSession))
-		//return
+		log.Info().Msg(ctx.Error(ErrWrongUserSession).Error())
+		return
 	}
 
 	if session.RefreshToken != request.RefreshToken {
-		ctx.Error(ErrWrongSessionToken)
-		//ctx.JSON(http.StatusUnauthorized, errorResponse(ErrWrongSessionToken))
-		//return
+		log.Info().Msg(ctx.Error(ErrWrongSessionToken).Error())
+		return
 	}
 
 	if session.ExpiredAt.Before(time.Now()) {
-		ctx.Error(ErrExpiredSession)
-		//ctx.JSON(http.StatusUnauthorized, errorResponse(ErrExpiredSession))
-		//return
+		log.Info().Msg(ctx.Error(ErrExpiredSession).Error())
+		return
 	}
 
 	accessToken, accessPayload, err := server.tokenMaker.CreateToken(
@@ -74,9 +68,8 @@ func (server *Server) renewAccessToken(ctx *gin.Context) {
 		server.config.AccessTokenDuration,
 	)
 	if err != nil {
-		ctx.Error(ErrTokenCreation)
-		//ctx.JSON(http.StatusInternalServerError, errorResponse(ErrTokenCreation))
-		//return
+		log.Info().Msg(ctx.Error(ErrTokenCreation).Error())
+		return
 	}
 
 	response := renewAccessTokenResponse{

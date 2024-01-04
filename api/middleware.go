@@ -14,8 +14,6 @@ const (
 	authorizationTypeBearer = "bearer"
 	authorizationPayloadKey = "authorization_payload"
 	RoleAdmin               = "admin"
-	RoleCustomer            = "customer"
-	RoleVisitor             = "visitor"
 )
 
 var ErrInvalidAuthHeaderFormat = errors.New("invalid authorization header format")
@@ -89,8 +87,6 @@ func errorHandlingMiddleware() gin.HandlerFunc {
 		if len(ctx.Errors) > 0 {
 			for _, err := range ctx.Errors {
 				switch {
-				case errors.Is(err.Err, ErrBindToJSON):
-					ctx.JSON(http.StatusBadRequest, errorResponse(ErrBindToJSON))
 				case errors.Is(err.Err, ErrUniqueViolation):
 					ctx.JSON(http.StatusForbidden, errorResponse(ErrUniqueViolation))
 				case errors.Is(err.Err, ErrInternalServer):
@@ -117,6 +113,8 @@ func errorHandlingMiddleware() gin.HandlerFunc {
 					ctx.JSON(http.StatusUnauthorized, errorResponse(ErrPasswordMistMach))
 				case errors.Is(err.Err, ErrNoRole):
 					ctx.JSON(http.StatusNotFound, errorResponse(ErrNoRole))
+				default:
+					validateFieldError(ctx, err)
 				}
 			}
 

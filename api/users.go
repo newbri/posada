@@ -9,6 +9,7 @@ import (
 	"github.com/newbri/posadamissportia/db"
 	"github.com/newbri/posadamissportia/db/util"
 	"github.com/newbri/posadamissportia/token"
+	"github.com/rs/zerolog/log"
 	"net/http"
 	"strings"
 	"time"
@@ -24,13 +25,13 @@ type createUserRequest struct {
 func (server *Server) createUser(ctx *gin.Context) {
 	var req createUserRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.Error(ErrBindToJSON)
+		log.Info().Msg(ctx.Error(err).Error())
 		return
 	}
 
 	hashedPassword, err := util.HashPassword(req.Password)
 	if err != nil {
-		ctx.Error(ErrInternalServer)
+		log.Info().Msg(ctx.Error(ErrInternalServer).Error())
 		return
 	}
 	arg := db.CreateUserParams{
@@ -47,11 +48,11 @@ func (server *Server) createUser(ctx *gin.Context) {
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code.Name() {
 			case "unique_violation":
-				ctx.Error(ErrUniqueViolation)
+				log.Info().Msg(ctx.Error(ErrUniqueViolation).Error())
 				return
 			}
 		}
-		ctx.Error(ErrInternalServer)
+		log.Info().Msg(ctx.Error(ErrInternalServer).Error())
 		return
 	}
 
@@ -66,17 +67,17 @@ type usernameURI struct {
 func (server *Server) getUser(ctx *gin.Context) {
 	var request usernameURI
 	if err := ctx.ShouldBindUri(&request); err != nil {
-		ctx.Error(ErrShouldBindUri)
+		log.Info().Msg(ctx.Error(ErrShouldBindUri).Error())
 		return
 	}
 
 	user, err := server.store.GetUser(ctx, request.Username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			ctx.Error(ErrNoRow)
+			log.Info().Msg(ctx.Error(ErrNoRow).Error())
 			return
 		}
-		ctx.Error(ErrInternalServer)
+		log.Info().Msg(ctx.Error(ErrInternalServer).Error())
 		return
 	}
 
@@ -94,7 +95,7 @@ type updateUserRequest struct {
 func (server *Server) updateUser(ctx *gin.Context) {
 	var request updateUserRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
-		ctx.Error(ErrBindToJSON)
+		log.Info().Msg(ctx.Error(err).Error())
 		return
 	}
 
@@ -113,7 +114,7 @@ func (server *Server) updateUser(ctx *gin.Context) {
 	if len(strings.TrimSpace(request.Password)) > 0 {
 		hashedPassword, err := util.HashPassword(request.Password)
 		if err != nil {
-			ctx.Error(ErrInternalServer)
+			log.Info().Msg(ctx.Error(ErrInternalServer).Error())
 			return
 		}
 
@@ -131,10 +132,10 @@ func (server *Server) updateUser(ctx *gin.Context) {
 	user, err := server.store.UpdateUser(ctx, args)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			ctx.Error(ErrNoRow)
+			log.Info().Msg(ctx.Error(ErrNoRow).Error())
 			return
 		}
-		ctx.Error(ErrInternalServer)
+		log.Info().Msg(ctx.Error(ErrInternalServer).Error())
 		return
 	}
 
@@ -165,17 +166,17 @@ func newUserResponse(user *db.User) userResponse {
 func (server *Server) deleteUser(ctx *gin.Context) {
 	var request usernameURI
 	if err := ctx.ShouldBindUri(&request); err != nil {
-		ctx.Error(ErrShouldBindUri)
+		log.Info().Msg(ctx.Error(ErrShouldBindUri).Error())
 		return
 	}
 
 	user, err := server.store.DeleteUser(ctx, request.Username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			ctx.Error(ErrNoRow)
+			log.Info().Msg(ctx.Error(ErrNoRow).Error())
 			return
 		}
-		ctx.Error(ErrInternalServer)
+		log.Info().Msg(ctx.Error(ErrInternalServer).Error())
 		return
 	}
 
@@ -200,24 +201,24 @@ type loginUserResponse struct {
 func (server *Server) loginUser(ctx *gin.Context) {
 	var request loginUserRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
-		ctx.Error(ErrBindToJSON)
+		log.Info().Msg(ctx.Error(err).Error())
 		return
 	}
 
 	user, err := server.store.GetUser(ctx, request.Username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			ctx.Error(ErrNoRow)
+			log.Info().Msg(ctx.Error(ErrNoRow).Error())
 			return
 		}
 
-		ctx.Error(ErrInternalServer)
+		log.Info().Msg(ctx.Error(ErrInternalServer).Error())
 		return
 	}
 
 	err = util.CheckPassword(request.Password, user.HashedPassword)
 	if err != nil {
-		ctx.Error(ErrPasswordMistMach)
+		log.Info().Msg(ctx.Error(ErrPasswordMistMach).Error())
 		return
 	}
 
@@ -227,7 +228,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		server.config.AccessTokenDuration,
 	)
 	if err != nil {
-		ctx.Error(ErrInternalServer)
+		log.Info().Msg(ctx.Error(ErrInternalServer).Error())
 		return
 	}
 
@@ -237,7 +238,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		server.config.RefreshTokenDuration,
 	)
 	if err != nil {
-		ctx.Error(ErrInternalServer)
+		log.Info().Msg(ctx.Error(ErrInternalServer).Error())
 		return
 	}
 
@@ -252,7 +253,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		CreatedAt:    time.Now(),
 	})
 	if err != nil {
-		ctx.Error(ErrInternalServer)
+		log.Info().Msg(ctx.Error(ErrInternalServer).Error())
 		return
 	}
 
@@ -274,10 +275,10 @@ func (server *Server) getUserInfo(ctx *gin.Context) {
 	user, err := server.store.GetUser(ctx, payload.Username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			ctx.Error(ErrNoRow)
+			log.Info().Msg(ctx.Error(ErrNoRow).Error())
 			return
 		}
-		ctx.Error(ErrInternalServer)
+		log.Info().Msg(ctx.Error(ErrInternalServer).Error())
 		return
 	}
 
