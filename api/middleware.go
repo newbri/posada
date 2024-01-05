@@ -86,35 +86,36 @@ func errorHandlingMiddleware() gin.HandlerFunc {
 		// only run if there are some errors to handle
 		if len(ctx.Errors) > 0 {
 			for _, err := range ctx.Errors {
+				response := validateFieldError(err)
 				switch {
 				case errors.Is(err.Err, ErrUniqueViolation):
-					ctx.JSON(http.StatusForbidden, errorResponse(ErrUniqueViolation))
+					ctx.JSON(http.StatusForbidden, gin.H{"errors": response})
 				case errors.Is(err.Err, ErrInternalServer):
-					ctx.JSON(http.StatusInternalServerError, errorResponse(ErrInternalServer))
+					ctx.JSON(http.StatusInternalServerError, gin.H{"errors": response})
 				case errors.Is(err.Err, ErrNoRow):
-					ctx.JSON(http.StatusNotFound, errorResponse(ErrNoRow))
+					ctx.JSON(http.StatusBadRequest, gin.H{"errors": response})
 				case errors.Is(err.Err, ErrShouldBindUri):
-					ctx.JSON(http.StatusBadRequest, errorResponse(ErrShouldBindUri))
+					ctx.JSON(http.StatusBadRequest, gin.H{"errors": response})
 				case errors.Is(err.Err, ErrVerifyToken):
-					ctx.JSON(http.StatusUnauthorized, errorResponse(ErrVerifyToken))
+					ctx.JSON(http.StatusUnauthorized, gin.H{"errors": response})
 				case errors.Is(err.Err, ErrSession):
-					ctx.JSON(http.StatusInternalServerError, errorResponse(ErrSession))
+					ctx.JSON(http.StatusInternalServerError, gin.H{"errors": response})
 				case errors.Is(err.Err, ErrBlockedSession):
-					ctx.JSON(http.StatusUnauthorized, errorResponse(ErrBlockedSession))
+					ctx.JSON(http.StatusUnauthorized, gin.H{"errors": response})
 				case errors.Is(err.Err, ErrWrongUserSession):
-					ctx.JSON(http.StatusUnauthorized, errorResponse(ErrWrongUserSession))
+					ctx.JSON(http.StatusUnauthorized, gin.H{"errors": response})
 				case errors.Is(err.Err, ErrWrongSessionToken):
-					ctx.JSON(http.StatusUnauthorized, errorResponse(ErrWrongSessionToken))
+					ctx.JSON(http.StatusUnauthorized, gin.H{"errors": response})
 				case errors.Is(err.Err, ErrExpiredSession):
-					ctx.JSON(http.StatusUnauthorized, errorResponse(ErrExpiredSession))
+					ctx.JSON(http.StatusUnauthorized, gin.H{"errors": response})
 				case errors.Is(err.Err, ErrTokenCreation):
-					ctx.JSON(http.StatusInternalServerError, errorResponse(ErrTokenCreation))
+					ctx.JSON(http.StatusInternalServerError, gin.H{"errors": response})
 				case errors.Is(err.Err, ErrPasswordMistMach):
-					ctx.JSON(http.StatusUnauthorized, errorResponse(ErrPasswordMistMach))
+					ctx.JSON(http.StatusUnauthorized, gin.H{"errors": response})
 				case errors.Is(err.Err, ErrNoRole):
-					ctx.JSON(http.StatusNotFound, errorResponse(ErrNoRole))
+					ctx.JSON(http.StatusNotFound, gin.H{"errors": response})
 				default:
-					validateFieldError(ctx, err)
+					ctx.JSON(http.StatusBadRequest, gin.H{"errors": response})
 				}
 			}
 

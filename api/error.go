@@ -3,9 +3,7 @@ package api
 import (
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	"net/http"
 )
 
 var (
@@ -40,17 +38,21 @@ func msgForTag(fe validator.FieldError) string {
 	return ""
 }
 
-func validateFieldError(ctx *gin.Context, err error) {
-	type response struct {
-		Field string
-		Msg   string
-	}
+type response struct {
+	Field string `json:"field" binding:"omitempty"`
+	Msg   string `json:"msg"`
+}
+
+func validateFieldError(err error) *[]response {
+	var out []response
 	var ve validator.ValidationErrors
-	if errors.As(err, &ve) {
-		out := make([]response, len(ve))
-		for i, fe := range ve {
-			out[i] = response{fe.Field(), msgForTag(fe)}
+	switch {
+	case errors.As(err, &ve):
+		for _, fe := range ve {
+			out = append(out, response{fe.Field(), msgForTag(fe)})
 		}
-		ctx.JSON(http.StatusBadRequest, gin.H{"errors": out})
+	default:
+		out = append(out, response{Msg: err.Error()})
 	}
+	return &out
 }
