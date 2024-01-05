@@ -194,7 +194,7 @@ func (server *Server) deleteRole(ctx *gin.Context) {
 			log.Info().Msg(ctx.Error(ErrNoRow).Error())
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(ErrInternalServer))
+		log.Info().Msg(ctx.Error(ErrInternalServer).Error())
 		return
 	}
 
