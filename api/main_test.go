@@ -6,6 +6,7 @@ import (
 	"github.com/newbri/posadamissportia/db/util"
 	"github.com/newbri/posadamissportia/token"
 	"github.com/rs/zerolog/log"
+	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 )
@@ -30,6 +31,12 @@ func newServer(store db.Store, tokenMaker token.Maker, env string) *Server {
 	}
 
 	return NewServer(store, tokenMaker, config)
+}
+
+func newTestTokenMaker(t *testing.T) (token.Maker, error) {
+	config, err := util.LoadConfig("../app.yaml", "test")
+	require.NoError(t, err)
+	return token.NewPasetoMaker(config.TokenSymmetricKey)
 }
 
 func TestMain(m *testing.M) {

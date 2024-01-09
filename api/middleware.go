@@ -93,7 +93,7 @@ func errorHandlingMiddleware() gin.HandlerFunc {
 				case errors.Is(err.Err, ErrInternalServer):
 					ctx.JSON(http.StatusInternalServerError, gin.H{"errors": response})
 				case errors.Is(err.Err, ErrNoRow):
-					ctx.JSON(http.StatusBadRequest, gin.H{"errors": response})
+					ctx.JSON(http.StatusNotFound, gin.H{"errors": response})
 				case errors.Is(err.Err, ErrShouldBindUri):
 					ctx.JSON(http.StatusBadRequest, gin.H{"errors": response})
 				case errors.Is(err.Err, ErrVerifyToken):

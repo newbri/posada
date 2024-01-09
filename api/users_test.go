@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
+	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"github.com/newbri/posadamissportia/db"
 	mockdb "github.com/newbri/posadamissportia/db/mock"
@@ -98,6 +99,7 @@ func TestCreateUser(t *testing.T) {
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				arg := db.CreateUserParams{
+					RoleID:   uuid.MustParse("018cb346-945e-77d3-87b3-181d1b50a382"),
 					Username: expectedUser.Username,
 					FullName: expectedUser.FullName,
 					Email:    expectedUser.Email,
@@ -181,6 +183,7 @@ func TestCreateUser(t *testing.T) {
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				arg := db.CreateUserParams{
+					RoleID:   uuid.MustParse("018cb346-945e-77d3-87b3-181d1b50a382"),
 					Username: expectedUser.Username,
 					FullName: expectedUser.FullName,
 					Email:    expectedUser.Email,
@@ -189,7 +192,7 @@ func TestCreateUser(t *testing.T) {
 				store.EXPECT().
 					CreateUser(gomock.Any(), EqCreateUserParams(arg, password)).
 					Times(1).
-					Return(db.User{}, &pq.Error{Code: "23505"})
+					Return(nil, &pq.Error{Code: "23505"})
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusForbidden, recorder.Code)
@@ -207,7 +210,7 @@ func TestCreateUser(t *testing.T) {
 				store.EXPECT().
 					CreateUser(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(db.User{}, sql.ErrConnDone)
+					Return(nil, sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
@@ -231,7 +234,7 @@ func TestCreateUser(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := "/users"
+			url := "/api/users"
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
@@ -277,7 +280,14 @@ func TestGetUser(t *testing.T) {
 				require.Equal(t, expectedUser.CreatedAt.Unix(), request.CreatedAt.Unix())
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					expectedUser.Username,
+					expectedUser.Role,
+					time.Minute,
+				)
 			},
 		},
 		{
@@ -292,7 +302,14 @@ func TestGetUser(t *testing.T) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					expectedUser.Username,
+					expectedUser.Role,
+					time.Minute,
+				)
 			},
 		},
 		{
@@ -302,13 +319,20 @@ func TestGetUser(t *testing.T) {
 				store.EXPECT().
 					GetUser(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(db.User{}, sql.ErrNoRows)
+					Return(nil, sql.ErrNoRows)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					expectedUser.Username,
+					expectedUser.Role,
+					time.Minute,
+				)
 			},
 		},
 		{
@@ -318,13 +342,20 @@ func TestGetUser(t *testing.T) {
 				store.EXPECT().
 					GetUser(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(db.User{}, sql.ErrConnDone)
+					Return(nil, sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					expectedUser.Username,
+					expectedUser.Role,
+					time.Minute,
+				)
 			},
 		},
 	}
@@ -342,7 +373,7 @@ func TestGetUser(t *testing.T) {
 			server := newTestServer(store)
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("/users/%s", tc.username)
+			url := fmt.Sprintf("/api/auth/admin/users/%s", tc.username)
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
@@ -404,7 +435,14 @@ func TestUpdateUser(t *testing.T) {
 				require.Equal(t, expectedUser.CreatedAt.Unix(), request.CreatedAt.Unix())
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					expectedUser.Username,
+					expectedUser.Role,
+					time.Minute,
+				)
 			},
 		},
 		{
@@ -446,7 +484,14 @@ func TestUpdateUser(t *testing.T) {
 				require.Equal(t, expectedUser.CreatedAt.Unix(), request.CreatedAt.Unix())
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					expectedUser.Username,
+					expectedUser.Role,
+					time.Minute,
+				)
 			},
 		},
 		{
@@ -461,7 +506,14 @@ func TestUpdateUser(t *testing.T) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					expectedUser.Username,
+					expectedUser.Role,
+					time.Minute,
+				)
 			},
 		},
 		{
@@ -488,7 +540,14 @@ func TestUpdateUser(t *testing.T) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					expectedUser.Username,
+					expectedUser.Role,
+					time.Minute,
+				)
 			},
 		},
 		{
@@ -510,13 +569,20 @@ func TestUpdateUser(t *testing.T) {
 				store.EXPECT().
 					UpdateUser(gomock.Any(), EqUpdateUserParams(args, password)).
 					Times(1).
-					Return(db.User{}, sql.ErrNoRows)
+					Return(nil, sql.ErrNoRows)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					expectedUser.Username,
+					expectedUser.Role,
+					time.Minute,
+				)
 			},
 		},
 		{
@@ -538,13 +604,20 @@ func TestUpdateUser(t *testing.T) {
 				store.EXPECT().
 					UpdateUser(gomock.Any(), EqUpdateUserParams(args, password)).
 					Times(1).
-					Return(db.User{}, sql.ErrConnDone)
+					Return(nil, sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					expectedUser.Username,
+					expectedUser.Role,
+					time.Minute,
+				)
 			},
 		},
 	}
@@ -565,7 +638,7 @@ func TestUpdateUser(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := "/users"
+			url := "/api/auth/users"
 			request, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
@@ -612,7 +685,14 @@ func TestDeleteUser(t *testing.T) {
 				require.Equal(t, expectedUser.CreatedAt.Unix(), request.CreatedAt.Unix())
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					expectedUser.Username,
+					expectedUser.Role,
+					time.Minute,
+				)
 			},
 		},
 		{
@@ -627,7 +707,14 @@ func TestDeleteUser(t *testing.T) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					expectedUser.Username,
+					expectedUser.Role,
+					time.Minute,
+				)
 			},
 		},
 		{
@@ -637,13 +724,20 @@ func TestDeleteUser(t *testing.T) {
 				store.EXPECT().
 					DeleteUser(gomock.Any(), expectedUser.Username).
 					Times(1).
-					Return(db.User{}, sql.ErrNoRows)
+					Return(nil, sql.ErrNoRows)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					expectedUser.Username,
+					expectedUser.Role,
+					time.Minute,
+				)
 			},
 		},
 		{
@@ -653,13 +747,20 @@ func TestDeleteUser(t *testing.T) {
 				store.EXPECT().
 					DeleteUser(gomock.Any(), expectedUser.Username).
 					Times(1).
-					Return(db.User{}, sql.ErrConnDone)
+					Return(nil, sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					expectedUser.Username,
+					expectedUser.Role,
+					time.Minute,
+				)
 			},
 		},
 	}
@@ -677,7 +778,7 @@ func TestDeleteUser(t *testing.T) {
 			server := newTestServer(store)
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("/users/%s", tc.username)
+			url := fmt.Sprintf("/api/auth/admin/users/%s", tc.username)
 			request, err := http.NewRequest(http.MethodDelete, url, nil)
 			require.NoError(t, err)
 
@@ -706,33 +807,54 @@ func TestLoginUser(t *testing.T) {
 				"password": password,
 			},
 			buildStubs: func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker) {
-				store.EXPECT().
+				store.
+					EXPECT().
 					GetUser(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(expectedUser, nil)
-				store.EXPECT().
-					CreateSession(gomock.Any(), gomock.Any()).
-					Times(1)
 
 				accessToken, accessPayload, err := createToken(
 					server.config.TokenSymmetricKey,
 					expectedUser.Username,
+					expectedUser.Role,
 					server.config.AccessTokenDuration,
 				)
-				maker.EXPECT().
+				maker.
+					EXPECT().
 					CreateToken(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(accessToken, accessPayload, err)
+					Return(accessToken, accessPayload, err).
+					AnyTimes()
 
 				refreshToken, refreshPayload, err := createToken(
 					server.config.TokenSymmetricKey,
 					expectedUser.Username,
+					expectedUser.Role,
 					server.config.RefreshTokenDuration,
 				)
-				maker.EXPECT().
+				maker.
+					EXPECT().
 					CreateToken(gomock.Any(), gomock.Any()).
 					Times(2).
 					Return(refreshToken, refreshPayload, err).
+					AnyTimes()
+
+				session := &db.Session{
+					ID:           uuid.New(),
+					Username:     expectedUser.Username,
+					RefreshToken: refreshToken,
+					UserAgent:    "PostmanRuntime/7.36.0",
+					ClientIp:     "::1",
+					IsBlocked:    false,
+					ExpiredAt:    time.Now().Add(time.Hour),
+					CreatedAt:    time.Now(),
+				}
+
+				store.
+					EXPECT().
+					CreateSession(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(session, nil).
 					AnyTimes()
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
@@ -747,10 +869,11 @@ func TestLoginUser(t *testing.T) {
 				"password": password,
 			},
 			buildStubs: func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker) {
-				store.EXPECT().
+				store.
+					EXPECT().
 					GetUser(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(db.User{}, sql.ErrNoRows)
+					Return(nil, sql.ErrNoRows)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
@@ -764,7 +887,8 @@ func TestLoginUser(t *testing.T) {
 				"password": "incorrect",
 			},
 			buildStubs: func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker) {
-				store.EXPECT().
+				store.
+					EXPECT().
 					GetUser(gomock.Any(), gomock.Eq(expectedUser.Username)).
 					Times(1).
 					Return(expectedUser, nil)
@@ -781,10 +905,11 @@ func TestLoginUser(t *testing.T) {
 				"password": password,
 			},
 			buildStubs: func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker) {
-				store.EXPECT().
+				store.
+					EXPECT().
 					GetUser(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(db.User{}, sql.ErrConnDone)
+					Return(nil, sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
@@ -798,7 +923,8 @@ func TestLoginUser(t *testing.T) {
 				"password1": password,
 			},
 			buildStubs: func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker) {
-				store.EXPECT().
+				store.
+					EXPECT().
 					GetUser(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
@@ -814,19 +940,15 @@ func TestLoginUser(t *testing.T) {
 				"password": password,
 			},
 			buildStubs: func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker) {
-				duration := time.Minute * 15
-
-				store.EXPECT().
+				store.
+					EXPECT().
 					GetUser(gomock.Any(), gomock.Eq(expectedUser.Username)).
 					Times(1).
-					Return(expectedUser, nil)
-				maker.EXPECT().
-					CreateToken(expectedUser.Username, duration).
-					Times(1).
-					Return("", nil, sql.ErrConnDone)
+					Return(nil, sql.ErrNoRows).
+					AnyTimes()
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+				require.Equal(t, http.StatusNotFound, recorder.Code)
 			},
 		},
 		{
@@ -837,20 +959,23 @@ func TestLoginUser(t *testing.T) {
 				"password": password,
 			},
 			buildStubs: func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker) {
-				store.EXPECT().
+				store.
+					EXPECT().
 					GetUser(gomock.Any(), gomock.Eq(expectedUser.Username)).
-					Times(1).
-					Return(expectedUser, nil)
+					Times(1)
 
 				accessToken, accessPayload, err := createToken(
 					server.config.TokenSymmetricKey,
 					expectedUser.Username,
+					expectedUser.Role,
 					server.config.AccessTokenDuration,
 				)
-				maker.EXPECT().
+				maker.
+					EXPECT().
 					CreateToken(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(accessToken, accessPayload, err)
+					Return(accessToken, accessPayload, err).
+					AnyTimes()
 
 				maker.EXPECT().
 					CreateToken(gomock.Any(), gomock.Any()).
@@ -870,31 +995,41 @@ func TestLoginUser(t *testing.T) {
 				"password": password,
 			},
 			buildStubs: func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker) {
-				store.EXPECT().
+				store.
+					EXPECT().
 					GetUser(gomock.Any(), gomock.Eq(expectedUser.Username)).
 					Times(1).
-					Return(expectedUser, nil)
-				store.EXPECT().
+					Return(expectedUser, nil).
+					AnyTimes()
+
+				store.
+					EXPECT().
 					CreateSession(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(db.Session{}, sql.ErrNoRows)
+					Return(nil, sql.ErrNoRows).
+					AnyTimes()
 
 				accessToken, accessPayload, err := createToken(
 					server.config.TokenSymmetricKey,
 					expectedUser.Username,
+					expectedUser.Role,
 					server.config.AccessTokenDuration,
 				)
-				maker.EXPECT().
+				maker.
+					EXPECT().
 					CreateToken(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(accessToken, accessPayload, err)
+					Return(accessToken, accessPayload, err).
+					AnyTimes()
 
 				refreshToken, refreshPayload, err := createToken(
 					server.config.TokenSymmetricKey,
 					expectedUser.Username,
+					expectedUser.Role,
 					server.config.RefreshTokenDuration,
 				)
-				maker.EXPECT().
+				maker.
+					EXPECT().
 					CreateToken(gomock.Any(), gomock.Any()).
 					Times(2).
 					Return(refreshToken, refreshPayload, err).
@@ -916,7 +1051,10 @@ func TestLoginUser(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			maker := mockdb.NewMockMaker(ctrl)
 
-			server := newServer(store, maker, tc.env)
+			tokenMaker, err := newTestTokenMaker(t)
+			require.NoError(t, err)
+
+			server := newServer(store, tokenMaker, tc.env)
 			recorder := httptest.NewRecorder()
 			tc.buildStubs(server, store, maker)
 
@@ -924,7 +1062,7 @@ func TestLoginUser(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := "/users/login"
+			url := "/api/users/login"
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
@@ -970,7 +1108,14 @@ func TestUserInfo(t *testing.T) {
 				require.Equal(t, expectedUser.CreatedAt.Unix(), request.CreatedAt.Unix())
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					expectedUser.Username,
+					expectedUser.Role,
+					time.Minute,
+				)
 			},
 		},
 		{
@@ -980,13 +1125,20 @@ func TestUserInfo(t *testing.T) {
 				store.EXPECT().
 					GetUser(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(db.User{}, sql.ErrNoRows)
+					Return(nil, sql.ErrNoRows)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					expectedUser.Username,
+					expectedUser.Role,
+					time.Minute,
+				)
 			},
 		},
 		{
@@ -996,13 +1148,20 @@ func TestUserInfo(t *testing.T) {
 				store.EXPECT().
 					GetUser(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(db.User{}, sql.ErrConnDone)
+					Return(nil, sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, expectedUser.Username, time.Minute)
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					expectedUser.Username,
+					expectedUser.Role,
+					time.Minute,
+				)
 			},
 		},
 	}
@@ -1020,7 +1179,7 @@ func TestUserInfo(t *testing.T) {
 			server := newTestServer(store)
 			recorder := httptest.NewRecorder()
 
-			url := "/users/info"
+			url := "/api/auth/users/info"
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
@@ -1031,43 +1190,59 @@ func TestUserInfo(t *testing.T) {
 	}
 }
 
-func createRandomUser() db.User {
+func createRandomUser() *db.User {
 	hashedPassword, err := util.HashPassword(util.RandomString(6))
 	if err != nil {
-		return db.User{}
+		return nil
 	}
 
-	return db.User{
+	return &db.User{
 		Username:          util.RandomOwner(),
 		HashedPassword:    hashedPassword,
 		FullName:          fmt.Sprintf("%s %s", util.RandomOwner(), util.RandomOwner()),
 		Email:             util.RandomEmail(),
 		PasswordChangedAt: time.Now(),
 		CreatedAt:         time.Now(),
+		Role: &db.Role{
+			InternalID:  uuid.New(),
+			Name:        RoleAdmin,
+			Description: "Administration's role",
+			ExternalID:  "URE101",
+			UpdatedAt:   time.Now(),
+			CreatedAt:   time.Now(),
+		},
 	}
 }
 
-func createRandomUserAndPassword() (db.User, string) {
+func createRandomUserAndPassword() (*db.User, string) {
 	password := util.RandomString(6)
 	hashedPassword, err := util.HashPassword(password)
 	if err != nil {
-		return db.User{}, ""
+		return nil, ""
 	}
 
-	return db.User{
+	return &db.User{
 		Username:          util.RandomOwner(),
 		HashedPassword:    hashedPassword,
 		FullName:          fmt.Sprintf("%s %s", util.RandomOwner(), util.RandomOwner()),
 		Email:             util.RandomEmail(),
 		PasswordChangedAt: time.Now(),
 		CreatedAt:         time.Now(),
+		Role: &db.Role{
+			InternalID:  uuid.New(),
+			Name:        RoleAdmin,
+			Description: "Administration's role",
+			ExternalID:  "URE101",
+			UpdatedAt:   time.Now(),
+			CreatedAt:   time.Now(),
+		},
 	}, password
 }
 
-func createToken(symmetricKey string, username string, duration time.Duration) (string, *token.Payload, error) {
+func createToken(symmetricKey string, username string, role *db.Role, duration time.Duration) (string, *token.Payload, error) {
 	tokenMaker, err := token.NewPasetoMaker(symmetricKey)
 	if err != nil {
 		return "", nil, err
 	}
-	return tokenMaker.CreateToken(username, duration)
+	return tokenMaker.CreateToken(username, role, duration)
 }
