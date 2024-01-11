@@ -9,6 +9,7 @@ import (
 	time "time"
 
 	gomock "github.com/golang/mock/gomock"
+	db "github.com/newbri/posadamissportia/db"
 	token "github.com/newbri/posadamissportia/token"
 )
 
@@ -36,9 +37,9 @@ func (m *MockMaker) EXPECT() *MockMakerMockRecorder {
 }
 
 // CreateToken mocks base method.
-func (m *MockMaker) CreateToken(arg0 string, arg1 time.Duration) (string, *token.Payload, error) {
+func (m *MockMaker) CreateToken(arg0 string, arg1 *db.Role, arg2 time.Duration) (string, *token.Payload, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateToken", arg0, arg1)
+	ret := m.ctrl.Call(m, "CreateToken", arg0, arg1, arg2)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(*token.Payload)
 	ret2, _ := ret[2].(error)
@@ -46,9 +47,9 @@ func (m *MockMaker) CreateToken(arg0 string, arg1 time.Duration) (string, *token
 }
 
 // CreateToken indicates an expected call of CreateToken.
-func (mr *MockMakerMockRecorder) CreateToken(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockMakerMockRecorder) CreateToken(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateToken", reflect.TypeOf((*MockMaker)(nil).CreateToken), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateToken", reflect.TypeOf((*MockMaker)(nil).CreateToken), arg0, arg1, arg2)
 }
 
 // VerifyToken mocks base method.
