@@ -86,19 +86,21 @@ func TestCreateUser(t *testing.T) {
 
 	testCases := []struct {
 		name          string
+		env           string
 		body          gin.H
-		buildStubs    func(store *mockdb.MockStore)
+		buildStubs    func(server *Server)
 		checkResponse func(recorder *httptest.ResponseRecorder)
 	}{
 		{
 			name: "OK",
+			env:  "test",
 			body: gin.H{
 				"username":  expectedUser.Username,
 				"password":  password,
 				"full_name": expectedUser.FullName,
 				"email":     expectedUser.Email,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			buildStubs: func(server *Server) {
 				arg := db.CreateUserParams{
 					RoleID:   uuid.MustParse("018cb346-945e-77d3-87b3-181d1b50a382"),
 					Username: expectedUser.Username,
@@ -106,7 +108,11 @@ func TestCreateUser(t *testing.T) {
 					Email:    expectedUser.Email,
 				}
 
-				store.EXPECT().
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				store.
+					EXPECT().
 					CreateUser(gomock.Any(), EqCreateUserParams(arg, password)).
 					Times(1).
 					Return(expectedUser, nil)
@@ -130,20 +136,25 @@ func TestCreateUser(t *testing.T) {
 		},
 		{
 			name: "StatusBadRequest",
+			env:  "test",
 			body: gin.H{
 				"username":  expectedUser.Username,
 				"password":  password,
 				"full_name": expectedUser.FullName,
 				"email1":    expectedUser.Email,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			buildStubs: func(server *Server) {
 				arg := db.CreateUserParams{
 					Username: expectedUser.Username,
 					FullName: expectedUser.FullName,
 					Email:    expectedUser.Email,
 				}
 
-				store.EXPECT().
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				store.
+					EXPECT().
 					CreateUser(gomock.Any(), EqCreateUserParams(arg, password)).
 					Times(0)
 			},
@@ -153,20 +164,25 @@ func TestCreateUser(t *testing.T) {
 		},
 		{
 			name: "BadPassword",
+			env:  "test",
 			body: gin.H{
 				"username":  expectedUser.Username,
 				"password":  longPassword,
 				"full_name": expectedUser.FullName,
 				"email":     expectedUser.Email,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			buildStubs: func(server *Server) {
 				arg := db.CreateUserParams{
 					Username: expectedUser.Username,
 					FullName: expectedUser.FullName,
 					Email:    expectedUser.Email,
 				}
 
-				store.EXPECT().
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				store.
+					EXPECT().
 					CreateUser(gomock.Any(), EqCreateUserParams(arg, longPassword)).
 					Times(0)
 			},
@@ -176,13 +192,14 @@ func TestCreateUser(t *testing.T) {
 		},
 		{
 			name: "DuplicateUsername",
+			env:  "test",
 			body: gin.H{
 				"username":  expectedUser.Username,
 				"password":  password,
 				"full_name": expectedUser.FullName,
 				"email":     expectedUser.Email,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			buildStubs: func(server *Server) {
 				arg := db.CreateUserParams{
 					RoleID:   uuid.MustParse("018cb346-945e-77d3-87b3-181d1b50a382"),
 					Username: expectedUser.Username,
@@ -190,7 +207,11 @@ func TestCreateUser(t *testing.T) {
 					Email:    expectedUser.Email,
 				}
 
-				store.EXPECT().
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				store.
+					EXPECT().
 					CreateUser(gomock.Any(), EqCreateUserParams(arg, password)).
 					Times(1).
 					Return(nil, &pq.Error{Code: "23505"})
@@ -201,14 +222,19 @@ func TestCreateUser(t *testing.T) {
 		},
 		{
 			name: "InternalError",
+			env:  "test",
 			body: gin.H{
 				"username":  expectedUser.Username,
 				"password":  password,
 				"full_name": expectedUser.FullName,
 				"email":     expectedUser.Email,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
-				store.EXPECT().
+			buildStubs: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				store.
+					EXPECT().
 					CreateUser(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(nil, sql.ErrConnDone)
@@ -227,10 +253,8 @@ func TestCreateUser(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
-			tc.buildStubs(store)
-
-			server := newTestServer(store)
-			recorder := httptest.NewRecorder()
+			server := newServer(store, nil, tc.env)
+			tc.buildStubs(server)
 
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
@@ -239,6 +263,7 @@ func TestCreateUser(t *testing.T) {
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
+			recorder := httptest.NewRecorder()
 			server.router.ServeHTTP(recorder, request)
 			tc.checkResponse(recorder)
 		})
