@@ -13,6 +13,7 @@ import (
 	mockdb "github.com/newbri/posadamissportia/db/mock"
 	"github.com/newbri/posadamissportia/db/util"
 	"github.com/newbri/posadamissportia/token"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
@@ -796,7 +797,7 @@ func TestLoginUser(t *testing.T) {
 		name          string
 		env           string
 		body          gin.H
-		buildStubs    func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker)
+		buildStubs    func(server *Server)
 		checkResponse func(recorder *httptest.ResponseRecorder)
 	}{
 		{
@@ -806,7 +807,10 @@ func TestLoginUser(t *testing.T) {
 				"username": expectedUser.Username,
 				"password": password,
 			},
-			buildStubs: func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker) {
+			buildStubs: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
 				store.
 					EXPECT().
 					GetUser(gomock.Any(), gomock.Any()).
@@ -819,11 +823,16 @@ func TestLoginUser(t *testing.T) {
 					expectedUser.Role,
 					server.config.AccessTokenDuration,
 				)
+				require.NoError(t, err)
+
+				maker, ok := server.tokenMaker.(*mockdb.MockMaker)
+				require.True(t, ok)
+
 				maker.
 					EXPECT().
-					CreateToken(gomock.Any(), gomock.Any()).
+					CreateToken(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(accessToken, accessPayload, err).
+					Return(accessToken, accessPayload, nil).
 					AnyTimes()
 
 				refreshToken, refreshPayload, err := createToken(
@@ -832,11 +841,12 @@ func TestLoginUser(t *testing.T) {
 					expectedUser.Role,
 					server.config.RefreshTokenDuration,
 				)
+				require.NoError(t, err)
 				maker.
 					EXPECT().
-					CreateToken(gomock.Any(), gomock.Any()).
+					CreateToken(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(2).
-					Return(refreshToken, refreshPayload, err).
+					Return(refreshToken, refreshPayload, nil).
 					AnyTimes()
 
 				session := &db.Session{
@@ -854,8 +864,7 @@ func TestLoginUser(t *testing.T) {
 					EXPECT().
 					CreateSession(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(session, nil).
-					AnyTimes()
+					Return(session, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
@@ -868,7 +877,10 @@ func TestLoginUser(t *testing.T) {
 				"username": "NotFound",
 				"password": password,
 			},
-			buildStubs: func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker) {
+			buildStubs: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
 				store.
 					EXPECT().
 					GetUser(gomock.Any(), gomock.Any()).
@@ -886,7 +898,10 @@ func TestLoginUser(t *testing.T) {
 				"username": expectedUser.Username,
 				"password": "incorrect",
 			},
-			buildStubs: func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker) {
+			buildStubs: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
 				store.
 					EXPECT().
 					GetUser(gomock.Any(), gomock.Eq(expectedUser.Username)).
@@ -904,7 +919,10 @@ func TestLoginUser(t *testing.T) {
 				"username": expectedUser.Username,
 				"password": password,
 			},
-			buildStubs: func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker) {
+			buildStubs: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
 				store.
 					EXPECT().
 					GetUser(gomock.Any(), gomock.Any()).
@@ -922,7 +940,10 @@ func TestLoginUser(t *testing.T) {
 				"username":  "NotFound",
 				"password1": password,
 			},
-			buildStubs: func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker) {
+			buildStubs: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
 				store.
 					EXPECT().
 					GetUser(gomock.Any(), gomock.Any()).
@@ -939,13 +960,15 @@ func TestLoginUser(t *testing.T) {
 				"username": expectedUser.Username,
 				"password": password,
 			},
-			buildStubs: func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker) {
+			buildStubs: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
 				store.
 					EXPECT().
 					GetUser(gomock.Any(), gomock.Eq(expectedUser.Username)).
 					Times(1).
-					Return(nil, sql.ErrNoRows).
-					AnyTimes()
+					Return(nil, sql.ErrNoRows)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
@@ -953,16 +976,54 @@ func TestLoginUser(t *testing.T) {
 		},
 		{
 			env:  "test",
-			name: "refreshToken Error",
+			name: "AccessTokenError",
 			body: gin.H{
 				"username": expectedUser.Username,
 				"password": password,
 			},
-			buildStubs: func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker) {
+			buildStubs: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
 				store.
 					EXPECT().
-					GetUser(gomock.Any(), gomock.Eq(expectedUser.Username)).
-					Times(1)
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(expectedUser, nil)
+
+				maker, ok := server.tokenMaker.(*mockdb.MockMaker)
+				require.True(t, ok)
+
+				maker.
+					EXPECT().
+					CreateToken(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).
+					Return("", nil, errors.New("failed to create chacha20poly1305 cipher")).
+					AnyTimes()
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+		{
+			env:  "test",
+			name: "RefreshTokenError",
+			body: gin.H{
+				"username": expectedUser.Username,
+				"password": password,
+			},
+			buildStubs: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				store.
+					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(expectedUser, nil)
+
+				maker, ok := server.tokenMaker.(*mockdb.MockMaker)
+				require.True(t, ok)
 
 				accessToken, accessPayload, err := createToken(
 					server.config.TokenSymmetricKey,
@@ -972,15 +1033,15 @@ func TestLoginUser(t *testing.T) {
 				)
 				maker.
 					EXPECT().
-					CreateToken(gomock.Any(), gomock.Any()).
+					CreateToken(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(accessToken, accessPayload, err).
-					AnyTimes()
+					Return(accessToken, accessPayload, err)
 
-				maker.EXPECT().
-					CreateToken(gomock.Any(), gomock.Any()).
+				maker.
+					EXPECT().
+					CreateToken(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(2).
-					Return("", nil, sql.ErrConnDone).
+					Return("", nil, errors.New("failed to create chacha20poly1305 cipher")).
 					AnyTimes()
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
@@ -989,12 +1050,15 @@ func TestLoginUser(t *testing.T) {
 		},
 		{
 			env:  "test",
-			name: "Session Error",
+			name: "SessionError",
 			body: gin.H{
 				"username": expectedUser.Username,
 				"password": password,
 			},
-			buildStubs: func(server *Server, store *mockdb.MockStore, maker *mockdb.MockMaker) {
+			buildStubs: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
 				store.
 					EXPECT().
 					GetUser(gomock.Any(), gomock.Eq(expectedUser.Username)).
@@ -1015,9 +1079,13 @@ func TestLoginUser(t *testing.T) {
 					expectedUser.Role,
 					server.config.AccessTokenDuration,
 				)
+
+				maker, ok := server.tokenMaker.(*mockdb.MockMaker)
+				require.True(t, ok)
+
 				maker.
 					EXPECT().
-					CreateToken(gomock.Any(), gomock.Any()).
+					CreateToken(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(accessToken, accessPayload, err).
 					AnyTimes()
@@ -1030,7 +1098,7 @@ func TestLoginUser(t *testing.T) {
 				)
 				maker.
 					EXPECT().
-					CreateToken(gomock.Any(), gomock.Any()).
+					CreateToken(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(2).
 					Return(refreshToken, refreshPayload, err).
 					AnyTimes()
@@ -1051,12 +1119,8 @@ func TestLoginUser(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			maker := mockdb.NewMockMaker(ctrl)
 
-			tokenMaker, err := newTestTokenMaker(t)
-			require.NoError(t, err)
-
-			server := newServer(store, tokenMaker, tc.env)
-			recorder := httptest.NewRecorder()
-			tc.buildStubs(server, store, maker)
+			server := newServer(store, maker, tc.env)
+			tc.buildStubs(server)
 
 			// Marshal body data to JSON
 			data, err := json.Marshal(tc.body)
@@ -1066,6 +1130,7 @@ func TestLoginUser(t *testing.T) {
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
+			recorder := httptest.NewRecorder()
 			server.router.ServeHTTP(recorder, request)
 			tc.checkResponse(recorder)
 		})
