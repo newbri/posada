@@ -251,7 +251,7 @@ func TestCreateUser(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
-			server := newServer(store, nil, tc.env)
+			server := newTestServer(store)
 			tc.buildStubs(server)
 
 			data, err := json.Marshal(tc.body)

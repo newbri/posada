@@ -20,19 +20,19 @@ func newTestServer(store db.Store) *Server {
 	if err != nil {
 		log.Fatal().Msg("cannot load config")
 	}
-	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
+	maker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
 	if err != nil {
 		return nil
 	}
 
-	return NewServer(store, tokenMaker, config)
+	return NewServer(store, maker, config)
 }
 
-func newServer(store db.Store, tokenMaker token.Maker, env string) *Server {
+func newServer(store db.Store, maker token.Maker, env string) *Server {
 	config, err := util.LoadConfig("../app.yaml", env)
 	if err != nil {
 		log.Fatal().Msg("cannot load config")
 	}
 
-	return NewServer(store, tokenMaker, config)
+	return NewServer(store, maker, config)
 }

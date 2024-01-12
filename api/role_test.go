@@ -30,6 +30,7 @@ func TestCreateRole(t *testing.T) {
 
 	testCases := []struct {
 		name         string
+		env          string
 		body         gin.H
 		mock         func(server *Server)
 		response     func(recorder *httptest.ResponseRecorder)
@@ -37,6 +38,7 @@ func TestCreateRole(t *testing.T) {
 	}{
 		{
 			name: "OK",
+			env:  "test",
 			body: gin.H{
 				"name":        expectedRole.Name,
 				"description": expectedRole.Description,
