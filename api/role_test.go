@@ -2,10 +2,12 @@ package api
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"github.com/newbri/posadamissportia/db"
 	mockdb "github.com/newbri/posadamissportia/db/mock"
 	"github.com/newbri/posadamissportia/token"
@@ -68,6 +70,98 @@ func TestCreateRole(t *testing.T) {
 				require.Equal(t, expectedRole.ExternalID, request.ExternalID)
 				require.Equal(t, expectedRole.UpdatedAt.Unix(), request.UpdatedAt.Unix())
 				require.Equal(t, expectedRole.CreatedAt.Unix(), request.CreatedAt.Unix())
+			},
+			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					user.Username,
+					user.Role,
+					time.Minute,
+				)
+			},
+		},
+		{
+			name: "StatusBadRequest",
+			env:  "test",
+			body: gin.H{
+				"name":         expectedRole.Name,
+				"description1": expectedRole.Description,
+			},
+			mock: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				store.
+					EXPECT().
+					CreateRole(gomock.Any(), gomock.Any()).
+					Times(0)
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					user.Username,
+					user.Role,
+					time.Minute,
+				)
+			},
+		},
+		{
+			name: "unique_violation",
+			env:  "test",
+			body: gin.H{
+				"name":        expectedRole.Name,
+				"description": expectedRole.Description,
+			},
+			mock: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				store.
+					EXPECT().
+					CreateRole(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(nil, &pq.Error{Code: "23505"})
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusForbidden, recorder.Code)
+			},
+			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					user.Username,
+					user.Role,
+					time.Minute,
+				)
+			},
+		},
+		{
+			name: "InternalServerError",
+			env:  "test",
+			body: gin.H{
+				"name":        expectedRole.Name,
+				"description": expectedRole.Description,
+			},
+			mock: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				store.
+					EXPECT().
+					CreateRole(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(nil, sql.ErrConnDone)
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
