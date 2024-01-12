@@ -14,7 +14,6 @@ import (
 	"github.com/newbri/posadamissportia/db/util"
 	"github.com/newbri/posadamissportia/token"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
@@ -246,9 +245,7 @@ func TestCreateUser(t *testing.T) {
 		},
 	}
 
-	for i := range testCases {
-		tc := testCases[i]
-
+	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
@@ -387,9 +384,7 @@ func TestGetUser(t *testing.T) {
 		},
 	}
 
-	for i := range testCases {
-		tc := testCases[i]
-
+	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
@@ -649,9 +644,7 @@ func TestUpdateUser(t *testing.T) {
 		},
 	}
 
-	for i := range testCases {
-		tc := testCases[i]
-
+	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
@@ -792,9 +785,7 @@ func TestDeleteUser(t *testing.T) {
 		},
 	}
 
-	for i := range testCases {
-		tc := testCases[i]
-
+	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
@@ -1135,9 +1126,7 @@ func TestLoginUser(t *testing.T) {
 		},
 	}
 
-	for i := range testCases {
-		tc := testCases[i]
-
+	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
@@ -1257,9 +1246,7 @@ func TestUserInfo(t *testing.T) {
 		},
 	}
 
-	for i := range testCases {
-		tc := testCases[i]
-
+	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
@@ -1336,26 +1323,4 @@ func createToken(symmetricKey string, username string, role *db.Role, duration t
 		return "", nil, err
 	}
 	return tokenMaker.CreateToken(username, role, duration)
-}
-
-func newTestServer(store db.Store) *Server {
-	config, err := util.LoadConfig("../app.yaml", "test")
-	if err != nil {
-		log.Fatal().Msg("cannot load config")
-	}
-	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
-	if err != nil {
-		return nil
-	}
-
-	return NewServer(store, tokenMaker, config)
-}
-
-func newServer(store db.Store, tokenMaker token.Maker, env string) *Server {
-	config, err := util.LoadConfig("../app.yaml", env)
-	if err != nil {
-		log.Fatal().Msg("cannot load config")
-	}
-
-	return NewServer(store, tokenMaker, config)
 }
