@@ -15,7 +15,7 @@ import (
 
 type createRoleRequest struct {
 	Name        string `json:"name" binding:"required,alphanum"`
-	Description string `json:"description" binding:"required,alphanum"`
+	Description string `json:"description" binding:"required"`
 }
 
 func (server *Server) createRole(ctx *gin.Context) {
