@@ -72,7 +72,7 @@ func (server *Server) getAllRole(ctx *gin.Context) {
 		Offset: request.Offset,
 	}
 
-	role, err := server.store.GetAllRole(ctx, arg)
+	roles, err := server.store.GetAllRole(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			log.Info().Msg(ctx.Error(ErrNoRow).Error())
@@ -83,7 +83,7 @@ func (server *Server) getAllRole(ctx *gin.Context) {
 	}
 
 	var response []roleResponse
-	for _, r := range role {
+	for _, r := range roles {
 		response = append(response, roleResponse{
 			ExternalID:  r.ExternalID,
 			Name:        r.Name,
