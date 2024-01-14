@@ -373,8 +373,8 @@ func TestGetAllRole(t *testing.T) {
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
-			recorder := httptest.NewRecorder()
 			tc.authenticate(t, request, server.tokenMaker)
+			recorder := httptest.NewRecorder()
 			server.router.ServeHTTP(recorder, request)
 			tc.response(recorder)
 		})
@@ -530,6 +530,133 @@ func TestGetRole(t *testing.T) {
 
 			url := fmt.Sprintf("/api/auth/admin/role/%s", tc.externalID)
 			request, err := http.NewRequest(http.MethodGet, url, nil)
+			require.NoError(t, err)
+
+			tc.authenticate(t, request, server.tokenMaker)
+			recorder := httptest.NewRecorder()
+			server.router.ServeHTTP(recorder, request)
+			tc.response(recorder)
+		})
+	}
+}
+
+func TestUpdateRole(t *testing.T) {
+	role := testGetAllRole()[0]
+	user := createRandomUser()
+	testCases := []struct {
+		name         string
+		env          string
+		body         gin.H
+		mock         func(server *Server)
+		response     func(recorder *httptest.ResponseRecorder)
+		authenticate func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+	}{
+		{
+			name: "NameOK",
+			env:  "test",
+			body: gin.H{
+				"external_id": role.ExternalID,
+				"name":        role.Name,
+			},
+			mock: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				store.
+					EXPECT().
+					UpdateRole(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(role, nil)
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+
+				data, err := io.ReadAll(recorder.Body)
+				require.NoError(t, err)
+
+				var request roleResponse
+				err = json.Unmarshal(data, &request)
+				require.NoError(t, err)
+
+				role := testGetAllRole()[0]
+				require.Equal(t, role.ExternalID, request.ExternalID)
+				require.Equal(t, role.Name, request.Name)
+				require.Equal(t, role.Description, request.Description)
+				require.Equal(t, role.CreatedAt.Unix(), request.CreatedAt.Unix())
+				require.Equal(t, role.CreatedAt.Unix(), request.UpdatedAt.Unix())
+			},
+			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					user.Username,
+					user.Role,
+					time.Minute,
+				)
+			},
+		},
+		{
+			name: "DescriptionOK",
+			env:  "test",
+			body: gin.H{
+				"external_id": role.ExternalID,
+				"description": role.Description,
+			},
+			mock: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				store.
+					EXPECT().
+					UpdateRole(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(role, nil)
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+
+				data, err := io.ReadAll(recorder.Body)
+				require.NoError(t, err)
+
+				var request roleResponse
+				err = json.Unmarshal(data, &request)
+				require.NoError(t, err)
+
+				role := testGetAllRole()[0]
+				require.Equal(t, role.ExternalID, request.ExternalID)
+				require.Equal(t, role.Name, request.Name)
+				require.Equal(t, role.Description, request.Description)
+				require.Equal(t, role.CreatedAt.Unix(), request.CreatedAt.Unix())
+				require.Equal(t, role.CreatedAt.Unix(), request.UpdatedAt.Unix())
+			},
+			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					user.Username,
+					user.Role,
+					time.Minute,
+				)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			store := mockdb.NewMockStore(ctrl)
+			server := newTestServer(store)
+			tc.mock(server)
+
+			data, err := json.Marshal(tc.body)
+			require.NoError(t, err)
+
+			url := "/api/auth/admin/role"
+			request, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
 			tc.authenticate(t, request, server.tokenMaker)
