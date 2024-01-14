@@ -125,11 +125,6 @@ func (server *Server) getRole(ctx *gin.Context) {
 		return
 	}
 
-	if role == nil {
-		log.Info().Msg(ctx.Error(ErrNoRole).Error())
-		return
-	}
-
 	roleResp := roleResponse{
 		ExternalID:  role.ExternalID,
 		Name:        role.Name,
