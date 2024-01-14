@@ -434,6 +434,33 @@ func TestGetRole(t *testing.T) {
 				)
 			},
 		},
+		{
+			name:     "BadRequest",
+			username: "-@anewball",
+			env:      "test",
+			mock: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				store.
+					EXPECT().
+					GetRole(gomock.Any(), gomock.Any()).
+					Times(0)
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					user.Username,
+					user.Role,
+					time.Minute,
+				)
+			},
+		},
 	}
 
 	for _, tc := range testCases {
