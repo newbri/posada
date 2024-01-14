@@ -24,7 +24,7 @@ func TestCreateRole(t *testing.T) {
 	expectedRole := &db.Role{
 		InternalID:  uuid.New(),
 		Name:        "visitor",
-		Description: "Visitor's expectedRole",
+		Description: "Visitor's Role",
 		ExternalID:  "URE101",
 		UpdatedAt:   time.Now(),
 		CreatedAt:   time.Now(),
@@ -197,5 +197,214 @@ func TestCreateRole(t *testing.T) {
 			server.router.ServeHTTP(recorder, request)
 			tc.response(recorder)
 		})
+	}
+}
+
+func TestGetAllRole(t *testing.T) {
+	user := createRandomUser()
+
+	testCases := []struct {
+		name         string
+		env          string
+		body         gin.H
+		mock         func(server *Server)
+		response     func(recorder *httptest.ResponseRecorder)
+		authenticate func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+	}{
+		{
+			name: "OK",
+			env:  "test",
+			body: gin.H{
+				"offset": 2,
+				"limit":  2,
+			},
+			mock: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				roles := testGetAllRole()
+
+				store.
+					EXPECT().
+					GetAllRole(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(roles, nil).
+					AnyTimes()
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+
+				data, err := io.ReadAll(recorder.Body)
+				require.NoError(t, err)
+
+				var request []roleResponse
+				err = json.Unmarshal(data, &request)
+				require.NoError(t, err)
+
+				roles := testGetAllRole()
+
+				for i := range request {
+					require.Equal(t, roles[i].ExternalID, request[i].ExternalID)
+					require.Equal(t, roles[i].Name, request[i].Name)
+					require.Equal(t, roles[i].Description, request[i].Description)
+					require.Equal(t, roles[i].CreatedAt.Unix(), request[i].CreatedAt.Unix())
+					require.Equal(t, roles[i].CreatedAt.Unix(), request[i].UpdatedAt.Unix())
+				}
+			},
+			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					user.Username,
+					user.Role,
+					time.Minute,
+				)
+			},
+		},
+		{
+			name: "BadRequest",
+			env:  "test",
+			body: gin.H{
+				"offset": 2,
+				"limit1": 2,
+			},
+			mock: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				store.
+					EXPECT().
+					GetAllRole(gomock.Any(), gomock.Any()).
+					Times(0)
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					user.Username,
+					user.Role,
+					time.Minute,
+				)
+			},
+		},
+		{
+			name: "BadRequest",
+			env:  "test",
+			body: gin.H{
+				"offset": 2,
+				"limit":  2,
+			},
+			mock: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				store.
+					EXPECT().
+					GetAllRole(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(nil, sql.ErrNoRows)
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusNotFound, recorder.Code)
+			},
+			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					user.Username,
+					user.Role,
+					time.Minute,
+				)
+			},
+		},
+		{
+			name: "ErrInternalServer",
+			env:  "test",
+			body: gin.H{
+				"offset": 2,
+				"limit":  2,
+			},
+			mock: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				store.
+					EXPECT().
+					GetAllRole(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(nil, sql.ErrConnDone)
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					user.Username,
+					user.Role,
+					time.Minute,
+				)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			store := mockdb.NewMockStore(ctrl)
+			server := newTestServer(store)
+			tc.mock(server)
+
+			data, err := json.Marshal(tc.body)
+			require.NoError(t, err)
+
+			url := "/api/auth/admin/role/all"
+			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
+			require.NoError(t, err)
+
+			recorder := httptest.NewRecorder()
+			tc.authenticate(t, request, server.tokenMaker)
+			server.router.ServeHTTP(recorder, request)
+			tc.response(recorder)
+		})
+	}
+}
+
+func testGetAllRole() []*db.Role {
+	return []*db.Role{
+		{
+			InternalID:  uuid.New(),
+			Name:        "Admin",
+			Description: "Administrator's Role",
+			ExternalID:  "URE101",
+			UpdatedAt:   time.Now(),
+			CreatedAt:   time.Now(),
+		},
+		{
+			InternalID:  uuid.New(),
+			Name:        "visitor",
+			Description: "Visitor's Role",
+			ExternalID:  "URE101",
+			UpdatedAt:   time.Now(),
+			CreatedAt:   time.Now(),
+		},
+		{
+			InternalID:  uuid.New(),
+			Name:        "customer",
+			Description: "Customer's Role",
+			ExternalID:  "URE101",
+			UpdatedAt:   time.Now(),
+			CreatedAt:   time.Now(),
+		},
 	}
 }
