@@ -24,7 +24,7 @@ CREATE TABLE "sessions"
 CREATE TABLE IF NOT EXISTS "role"
 (
     "internal_id" uuid PRIMARY KEY,
-    "name"        text        NOT NULL,
+    "name"        text UNIQUE NOT NULL,
     "description" text        NOT NULL,
     "external_id" text        NOT NULL UNIQUE,
     "updated_at"  timestamptz NOT NULL DEFAULT (now()),
@@ -59,6 +59,7 @@ ALTER TABLE IF EXISTS "sessions"
         FOREIGN KEY ("username") REFERENCES "users" ("username");
 
 CREATE UNIQUE INDEX IF NOT EXISTS "role_external_id_index" ON "role" ("external_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "role_name" ON "role" ("name");
 ALTER TABLE IF EXISTS "users"
     ADD CONSTRAINT "fk_role_id" FOREIGN KEY ("role_id") REFERENCES "role" ("internal_id");
 
@@ -77,10 +78,28 @@ ALTER TABLE IF EXISTS "property_user"
 CREATE SEQUENCE IF NOT EXISTS "role_sequence" START 101;
 
 INSERT INTO "role" (internal_id, name, description, external_id)
-VALUES (gen_random_uuid(), 'admin', E'Administrator\'s role', CONCAT('URE',nextval('role_sequence')));
+VALUES (gen_random_uuid(), 'admin', E'Administrator\'s role', CONCAT('URE', nextval('role_sequence')));
 
 INSERT INTO "role" (internal_id, name, description, external_id)
-VALUES (gen_random_uuid(), 'customer', E'Customer\'s role', CONCAT('URE',nextval('role_sequence')));
+VALUES (gen_random_uuid(), 'customer', E'Customer\'s role', CONCAT('URE', nextval('role_sequence')));
 
 INSERT INTO "role" (internal_id, name, description, external_id)
-VALUES (gen_random_uuid(), 'visitor', E'Visitor\'s role', CONCAT('URE',nextval('role_sequence')));
+VALUES (gen_random_uuid(), 'visitor', E'Visitor\'s role', CONCAT('URE', nextval('role_sequence')));
+
+CREATE OR REPLACE FUNCTION create_user(user_name TEXT, hashedPassword TEXT, fullName TEXT, userEmail TEXT,
+                                       role_type TEXT) RETURNS void AS
+$$
+DECLARE
+    role_uuid uuid;
+BEGIN
+    SELECT internal_id INTO role_uuid FROM role WHERE name = role_type;
+
+    INSERT INTO users ("username", hashed_password, full_name, email, role_id)
+    VALUES (user_name, hashedPassword, fullName, userEmail, role_uuid);
+END;
+$$
+    LANGUAGE plpgsql
+    SECURITY DEFINER;
+
+SELECT create_user('anewball', '$2a$10$ovvoX8WckUAZTEhRLfIWKOcwcp2qeAvNZoAIXrE5ve1PccMGZpSDa', 'Andy Newball',
+                   'andy.newball@anewball.com', 'admin');

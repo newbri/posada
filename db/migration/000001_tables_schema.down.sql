@@ -5,6 +5,7 @@ DROP INDEX IF EXISTS "fk_sessions_username";
 DROP INDEX IF EXISTS "fk_role_id";
 ALTER TABLE IF EXISTS "property_user" DROP CONSTRAINT IF EXISTS "fk_property";
 ALTER TABLE IF EXISTS "property_user" DROP CONSTRAINT IF EXISTS "fk_user";
+DROP FUNCTION IF EXISTS "create_user";
 
 DROP TABLE IF EXISTS "sessions";
 DROP TABLE IF EXISTS "users";
