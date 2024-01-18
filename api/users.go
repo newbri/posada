@@ -35,8 +35,8 @@ func (server *Server) createUser(ctx *gin.Context) {
 		return
 	}
 
-	externalID := server.config.DefaultRoleExternalID
-	role, err := server.store.GetRole(ctx, externalID)
+	defaultRole := server.config.DefaultRole
+	role, err := server.store.GetRoleByName(ctx, defaultRole)
 	if err != nil {
 		log.Info().Msg(ctx.Error(err).Error())
 		return

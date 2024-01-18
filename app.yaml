@@ -9,7 +9,7 @@ config:
         access_token_duration: 15m
         refresh_token_duration: 24h
         token_symmetric_key: 12345678901234567890123456789012
-        default_role_external_id: URE102
+        default_role: customer
     test:
         name: test
         db_driver: postgres
@@ -20,7 +20,7 @@ config:
         access_token_duration: 15m
         refresh_token_duration: 24h
         token_symmetric_key: 12345678901234567890123456789012
-        default_role_external_id: URE102
+        default_role: customer
     prod:
         name: production
         db_driver: postgres
@@ -31,4 +31,4 @@ config:
         access_token_duration: 15m
         refresh_token_duration: 24h
         token_symmetric_key: 12345678901234567890123456789012
-        default_role_external_id: URE102
+        default_role: customer
