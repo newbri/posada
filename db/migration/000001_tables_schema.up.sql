@@ -53,3 +53,34 @@ CREATE TABLE IF NOT EXISTS "property_user"
     "property_internal_id" uuid NOT NULL,
     "username"             text NOT NULL
 );
+
+ALTER TABLE IF EXISTS "sessions"
+    ADD CONSTRAINT "fk_sessions_username"
+        FOREIGN KEY ("username") REFERENCES "users" ("username");
+
+CREATE UNIQUE INDEX IF NOT EXISTS "role_external_id_index" ON "role" ("external_id");
+ALTER TABLE IF EXISTS "users"
+    ADD CONSTRAINT "fk_role_id" FOREIGN KEY ("role_id") REFERENCES "role" ("internal_id");
+
+ALTER TABLE IF EXISTS "property_user"
+    ADD CONSTRAINT "fk_property"
+        FOREIGN KEY (property_internal_id)
+            REFERENCES "property" (internal_id)
+            ON DELETE CASCADE;
+
+ALTER TABLE IF EXISTS "property_user"
+    ADD CONSTRAINT "fk_user"
+        FOREIGN KEY (username)
+            REFERENCES users (username)
+            ON DELETE CASCADE;
+
+CREATE SEQUENCE IF NOT EXISTS "role_sequence" START 101;
+
+INSERT INTO "role" (internal_id, name, description, external_id)
+VALUES (gen_random_uuid(), 'admin', E'Administrator\'s role', CONCAT('URE',nextval('role_sequence')));
+
+INSERT INTO "role" (internal_id, name, description, external_id)
+VALUES (gen_random_uuid(), 'customer', E'Customer\'s role', CONCAT('URE',nextval('role_sequence')));
+
+INSERT INTO "role" (internal_id, name, description, external_id)
+VALUES (gen_random_uuid(), 'visitor', E'Visitor\'s role', CONCAT('URE',nextval('role_sequence')));

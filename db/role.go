@@ -9,21 +9,19 @@ import (
 
 const createRoleQuery = `
 INSERT INTO role (internal_id, name, description, external_id) 
-VALUES ($1,$2,$3, CONCAT('URE',nextval('role_sequence')))
+VALUES (gen_random_uuid(),$2,$3, CONCAT('URE',nextval('role_sequence')))
 RETURNING internal_id,name,description,external_id,created_at,updated_at
 `
 
 type CreateRoleParams struct {
-	ID          uuid.UUID `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
 }
 
 func (q *Queries) CreateRole(ctx context.Context, arg CreateRoleParams) (*Role, error) {
 	row := q.db.QueryRowContext(
 		ctx,
 		createRoleQuery,
-		arg.ID,
 		arg.Name,
 		arg.Description,
 	)

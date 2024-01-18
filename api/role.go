@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"github.com/newbri/posadamissportia/db"
 	"github.com/rs/zerolog/log"
@@ -25,9 +24,7 @@ func (server *Server) createRole(ctx *gin.Context) {
 		return
 	}
 
-	id, _ := uuid.NewV7()
 	arg := db.CreateRoleParams{
-		ID:          id,
 		Name:        request.Name,
 		Description: request.Description,
 	}
