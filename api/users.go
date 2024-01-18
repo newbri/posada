@@ -34,12 +34,20 @@ func (server *Server) createUser(ctx *gin.Context) {
 		log.Info().Msg(ctx.Error(ErrInternalServer).Error())
 		return
 	}
+
+	externalID := server.config.DefaultRoleExternalID
+	role, err := server.store.GetRole(ctx, externalID)
+	if err != nil {
+		log.Info().Msg(ctx.Error(err).Error())
+		return
+	}
+
 	arg := db.CreateUserParams{
 		Username:       req.Username,
 		HashedPassword: hashedPassword,
 		FullName:       req.FullName,
 		Email:          req.Email,
-		RoleID:         uuid.MustParse("018cb346-945e-77d3-87b3-181d1b50a382"),
+		RoleID:         role.InternalID,
 	}
 
 	user, err := server.store.CreateUser(ctx, arg)
