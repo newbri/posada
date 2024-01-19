@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"github.com/newbri/posadamissportia/db"
@@ -15,6 +14,7 @@ import (
 	"github.com/newbri/posadamissportia/token"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -102,7 +102,7 @@ func TestCreateUser(t *testing.T) {
 			},
 			buildStubs: func(server *Server) {
 				arg := db.CreateUserParams{
-					RoleID:   uuid.MustParse("018cb346-945e-77d3-87b3-181d1b50a382"),
+					RoleID:   uuid.MustParse("fa9db3f3-2664-4e6d-a9c9-32625a4b6bbe"),
 					Username: expectedUser.Username,
 					FullName: expectedUser.FullName,
 					Email:    expectedUser.Email,
@@ -110,6 +110,21 @@ func TestCreateUser(t *testing.T) {
 
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
+
+				role := &db.Role{
+					InternalID:  uuid.MustParse("fa9db3f3-2664-4e6d-a9c9-32625a4b6bbe"),
+					Name:        RoleCustomer,
+					Description: "Customer's role",
+					ExternalID:  "URE102",
+					UpdatedAt:   time.Now(),
+					CreatedAt:   time.Now(),
+				}
+
+				store.
+					EXPECT().
+					GetRoleByName(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(role, nil)
 
 				store.
 					EXPECT().
@@ -201,7 +216,7 @@ func TestCreateUser(t *testing.T) {
 			},
 			buildStubs: func(server *Server) {
 				arg := db.CreateUserParams{
-					RoleID:   uuid.MustParse("018cb346-945e-77d3-87b3-181d1b50a382"),
+					RoleID:   uuid.MustParse("fa9db3f3-2664-4e6d-a9c9-32625a4b6bbe"),
 					Username: expectedUser.Username,
 					FullName: expectedUser.FullName,
 					Email:    expectedUser.Email,
@@ -209,6 +224,21 @@ func TestCreateUser(t *testing.T) {
 
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
+
+				role := &db.Role{
+					InternalID:  uuid.MustParse("fa9db3f3-2664-4e6d-a9c9-32625a4b6bbe"),
+					Name:        RoleCustomer,
+					Description: "Customer's role",
+					ExternalID:  "URE102",
+					UpdatedAt:   time.Now(),
+					CreatedAt:   time.Now(),
+				}
+
+				store.
+					EXPECT().
+					GetRoleByName(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(role, nil)
 
 				store.
 					EXPECT().
@@ -233,6 +263,21 @@ func TestCreateUser(t *testing.T) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
 
+				role := &db.Role{
+					InternalID:  uuid.MustParse("fa9db3f3-2664-4e6d-a9c9-32625a4b6bbe"),
+					Name:        RoleCustomer,
+					Description: "Customer's role",
+					ExternalID:  "URE102",
+					UpdatedAt:   time.Now(),
+					CreatedAt:   time.Now(),
+				}
+
+				store.
+					EXPECT().
+					GetRoleByName(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(role, nil)
+
 				store.
 					EXPECT().
 					CreateUser(gomock.Any(), gomock.Any()).
@@ -241,6 +286,29 @@ func TestCreateUser(t *testing.T) {
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+		{
+			name: "RoleDoesNotExist",
+			env:  "test",
+			body: gin.H{
+				"username":  expectedUser.Username,
+				"password":  password,
+				"full_name": expectedUser.FullName,
+				"email":     expectedUser.Email,
+			},
+			buildStubs: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				store.
+					EXPECT().
+					GetRoleByName(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(nil, fmt.Errorf("error exist"))
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 	}
