@@ -103,3 +103,5 @@ $$
 
 SELECT create_user('anewball', '$2a$10$ovvoX8WckUAZTEhRLfIWKOcwcp2qeAvNZoAIXrE5ve1PccMGZpSDa', 'Andy Newball',
                    'andy.newball@anewball.com', 'admin');
+SELECT create_user('jayjay', '$2a$10$ovvoX8WckUAZTEhRLfIWKOcwcp2qeAvNZoAIXrE5ve1PccMGZpSDa', 'Jayden Newball',
+                   'jayden.newball@anewball.com', 'customer');
