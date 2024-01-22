@@ -71,6 +71,53 @@ func (q *Queries) GetUser(ctx context.Context, username string) (*User, error) {
 	return &user, err
 }
 
+type ListUsersParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
+
+const getAllUserQuery = `SELECT username, hashed_password, full_name, email, password_changed_at, users.created_at, role_id
+FROM users INNER JOIN role on users.role_id = role.internal_id WHERE role.name=$1 LIMIT $2 OFFSET $3;`
+
+func (q *Queries) GetAllCustomerUser(ctx context.Context, arg ListUsersParams) ([]*User, error) {
+	rows, err := q.db.QueryContext(ctx, getAllUserQuery, "customer", arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer func(rows *sql.Rows) {
+		_ = rows.Close()
+	}(rows)
+
+	var items []*User
+	for rows.Next() {
+		var user User
+		var role Role
+		if err := rows.Scan(
+			&user.Username,
+			&user.HashedPassword,
+			&user.FullName,
+			&user.Email,
+			&user.PasswordChangedAt,
+			&user.CreatedAt,
+			&role.InternalID,
+		); err != nil {
+			return nil, err
+		}
+		user.Role, err = q.GetRoleByUUID(ctx, role.InternalID)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, &user)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 type UpdateUserParams struct {
 	HashedPassword    sql.NullString `json:"hashed_password"`
 	PasswordChangedAt sql.NullTime   `json:"password_changed_at"`

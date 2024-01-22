@@ -19,4 +19,5 @@ type Querier interface {
 	GetRoleByUUID(ctx context.Context, internalId uuid.UUID) (*Role, error)
 	UpdateRole(ctx context.Context, arg UpdateRoleParams) (*Role, error)
 	DeleteRole(ctx context.Context, externalID string) (*Role, error)
+	GetAllCustomerUser(ctx context.Context, arg ListUsersParams) ([]*User, error)
 }

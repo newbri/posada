@@ -293,3 +293,31 @@ func (server *Server) getUserInfo(ctx *gin.Context) {
 	response := newUserResponse(user)
 	ctx.JSON(http.StatusOK, response)
 }
+
+func (server *Server) getAllCustomerUser(ctx *gin.Context) {
+	var request struct {
+		Limit  int32 `json:"limit" binding:"required,gte=1"`
+		Offset int32 `json:"offset" binding:"min=0"`
+	}
+	if err := ctx.ShouldBindJSON(&request); err != nil {
+		log.Info().Msg(ctx.Error(err).Error())
+		return
+	}
+
+	arg := db.ListUsersParams{
+		Limit:  request.Limit,
+		Offset: request.Offset,
+	}
+
+	users, err := server.store.GetAllCustomerUser(ctx, arg)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			log.Info().Msg(ctx.Error(ErrNoRow).Error())
+			return
+		}
+		log.Info().Msg(ctx.Error(ErrInternalServer).Error())
+		return
+	}
+
+	ctx.JSON(http.StatusOK, users)
+}

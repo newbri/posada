@@ -47,6 +47,7 @@ func (server *Server) setupRouter() {
 	adminGroup.DELETE("/role/:id", server.deleteRole)
 	adminGroup.GET("/users/:username", server.getUser)
 	adminGroup.DELETE("/users/:username", server.deleteUser)
+	adminGroup.POST("/users/all/customer", server.getAllCustomerUser)
 
 	server.router = router
 }
