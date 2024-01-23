@@ -7,6 +7,10 @@ import (
 	"time"
 )
 
+const (
+	RoleAdmin    = "admin"
+	RoleCustomer = "customer"
+)
 const createRoleQuery = `
 INSERT INTO role (internal_id, name, description, external_id) 
 VALUES (gen_random_uuid(),$2,$3, CONCAT('URE',nextval('role_sequence')))

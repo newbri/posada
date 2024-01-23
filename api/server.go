@@ -39,7 +39,7 @@ func (server *Server) setupRouter() {
 
 	// admin
 	adminGroup := authGroup.Group("/admin")
-	adminGroup.Use(pasetoAuthRole(RoleAdmin))
+	adminGroup.Use(pasetoAuthRole(db.RoleAdmin))
 	adminGroup.POST("/role", server.createRole)
 	adminGroup.GET("/role/:id", server.getRole)
 	adminGroup.POST("/role/all", server.getAllRole)

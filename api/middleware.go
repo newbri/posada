@@ -13,8 +13,6 @@ const (
 	authorizationHeaderKey  = "authorization"
 	authorizationTypeBearer = "bearer"
 	authorizationPayloadKey = "authorization_payload"
-	RoleAdmin               = "admin"
-	RoleCustomer            = "customer"
 )
 
 var ErrInvalidAuthHeaderFormat = errors.New("invalid authorization header format")

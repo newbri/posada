@@ -80,7 +80,7 @@ const getAllUserQuery = `SELECT username, hashed_password, full_name, email, pas
 FROM users INNER JOIN role on users.role_id = role.internal_id WHERE role.name=$1 LIMIT $2 OFFSET $3;`
 
 func (q *Queries) GetAllCustomerUser(ctx context.Context, arg ListUsersParams) ([]*User, error) {
-	rows, err := q.db.QueryContext(ctx, getAllUserQuery, "customer", arg.Limit, arg.Offset)
+	rows, err := q.db.QueryContext(ctx, getAllUserQuery, RoleCustomer, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
