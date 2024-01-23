@@ -113,7 +113,7 @@ func TestCreateUser(t *testing.T) {
 
 				role := &db.Role{
 					InternalID:  uuid.MustParse("fa9db3f3-2664-4e6d-a9c9-32625a4b6bbe"),
-					Name:        RoleCustomer,
+					Name:        db.RoleCustomer,
 					Description: "Customer's role",
 					ExternalID:  "URE102",
 					UpdatedAt:   time.Now(),
@@ -227,7 +227,7 @@ func TestCreateUser(t *testing.T) {
 
 				role := &db.Role{
 					InternalID:  uuid.MustParse("fa9db3f3-2664-4e6d-a9c9-32625a4b6bbe"),
-					Name:        RoleCustomer,
+					Name:        db.RoleCustomer,
 					Description: "Customer's role",
 					ExternalID:  "URE102",
 					UpdatedAt:   time.Now(),
@@ -265,7 +265,7 @@ func TestCreateUser(t *testing.T) {
 
 				role := &db.Role{
 					InternalID:  uuid.MustParse("fa9db3f3-2664-4e6d-a9c9-32625a4b6bbe"),
-					Name:        RoleCustomer,
+					Name:        db.RoleCustomer,
 					Description: "Customer's role",
 					ExternalID:  "URE102",
 					UpdatedAt:   time.Now(),
@@ -1351,7 +1351,7 @@ func createRandomUser() *db.User {
 		CreatedAt:         time.Now(),
 		Role: &db.Role{
 			InternalID:  uuid.New(),
-			Name:        RoleAdmin,
+			Name:        db.RoleAdmin,
 			Description: "Administration's role",
 			ExternalID:  "URE101",
 			UpdatedAt:   time.Now(),
@@ -1376,7 +1376,7 @@ func createRandomUserAndPassword() (*db.User, string) {
 		CreatedAt:         time.Now(),
 		Role: &db.Role{
 			InternalID:  uuid.New(),
-			Name:        RoleAdmin,
+			Name:        db.RoleAdmin,
 			Description: "Administration's role",
 			ExternalID:  "URE101",
 			UpdatedAt:   time.Now(),
