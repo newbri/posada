@@ -319,5 +319,10 @@ func (server *Server) getAllCustomerUser(ctx *gin.Context) {
 		return
 	}
 
+	if users == nil {
+		log.Info().Msg(ctx.Error(ErrNoCustomerFound).Error())
+		return
+	}
+
 	ctx.JSON(http.StatusOK, users)
 }

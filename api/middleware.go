@@ -111,7 +111,7 @@ func errorHandlingMiddleware() gin.HandlerFunc {
 					ctx.JSON(http.StatusInternalServerError, gin.H{"errors": response})
 				case errors.Is(err.Err, ErrPasswordMistMach):
 					ctx.JSON(http.StatusUnauthorized, gin.H{"errors": response})
-				case errors.Is(err.Err, ErrNoRole):
+				case errors.Is(err.Err, ErrNoRole) || errors.Is(err.Err, ErrNoCustomerFound):
 					ctx.JSON(http.StatusNotFound, gin.H{"errors": response})
 				default:
 					ctx.JSON(http.StatusBadRequest, gin.H{"errors": response})
