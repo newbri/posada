@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-const createUser = `
+const insertUserQuery = `
 INSERT INTO users (username, hashed_password, full_name, email, role_id) 
 VALUES ($1,$2,$3,$4,$5)
 RETURNING username,hashed_password,full_name,email,password_changed_at,created_at,role_id
@@ -21,7 +21,7 @@ type CreateUserParams struct {
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (*User, error) {
-	row := q.db.QueryRowContext(ctx, createUser,
+	row := q.db.QueryRowContext(ctx, insertUserQuery,
 		arg.Username,
 		arg.HashedPassword,
 		arg.FullName,
@@ -46,13 +46,13 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (*User, 
 	return &user, err
 }
 
-const getUser = `
+const getUserQuery = `
 SELECT username, hashed_password, full_name, email, password_changed_at, created_at, role_id 
 FROM users WHERE username = $1;
 `
 
 func (q *Queries) GetUser(ctx context.Context, username string) (*User, error) {
-	row := q.db.QueryRowContext(ctx, getUser, username)
+	row := q.db.QueryRowContext(ctx, getUserQuery, username)
 	var user User
 	var role Role
 	err := row.Scan(
@@ -95,7 +95,7 @@ type UpdateUserParams struct {
 	Username          string         `json:"username"`
 }
 
-const updateUser = `
+const updateUserQuery = `
 UPDATE users
 SET hashed_password = coalesce($1, hashed_password),
     password_changed_at = coalesce($2, password_changed_at),
@@ -106,7 +106,7 @@ RETURNING username, hashed_password, full_name, email, password_changed_at, crea
 `
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (*User, error) {
-	row := q.db.QueryRowContext(ctx, updateUser,
+	row := q.db.QueryRowContext(ctx, updateUserQuery,
 		arg.HashedPassword,
 		arg.PasswordChangedAt,
 		arg.FullName,

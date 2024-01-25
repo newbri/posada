@@ -30,7 +30,7 @@ func TestCreateUser(t *testing.T) {
 	}{
 		{
 			name:  "OK",
-			query: createUser,
+			query: insertUserQuery,
 			arg: CreateUserParams{
 				Username:       user.Username,
 				HashedPassword: user.HashedPassword,
@@ -39,7 +39,7 @@ func TestCreateUser(t *testing.T) {
 			},
 			validate: func(query string, arg CreateUserParams) {
 
-				mocker.ExpectQuery(regexp.QuoteMeta(createUser)).
+				mocker.ExpectQuery(regexp.QuoteMeta(insertUserQuery)).
 					WithArgs(arg.Username, arg.HashedPassword, arg.FullName, arg.Email).
 					WillReturnRows(rows)
 
@@ -84,10 +84,10 @@ func TestGetUser(t *testing.T) {
 	}{
 		{
 			name:  "OK",
-			query: getUser,
+			query: getUserQuery,
 			validate: func(query, username string) {
 
-				mocker.ExpectQuery(regexp.QuoteMeta(getUser)).
+				mocker.ExpectQuery(regexp.QuoteMeta(getUserQuery)).
 					WithArgs(username).
 					WillReturnRows(rows)
 
@@ -177,7 +177,7 @@ func mockUpdateUserDB(user User, args UpdateUserParams) {
 			user.CreatedAt,
 		)
 
-	mocker.ExpectQuery(regexp.QuoteMeta(updateUser)).
+	mocker.ExpectQuery(regexp.QuoteMeta(updateUserQuery)).
 		WithArgs(args.HashedPassword, args.PasswordChangedAt, args.FullName, args.Email, args.Username).
 		WillReturnRows(rows)
 }
