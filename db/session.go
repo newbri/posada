@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-const createSession = `-- name: CreateSession :one
+const createSessionQuery = `-- name: CreateSession :one
 INSERT INTO sessions (id,
                       username,
                       refresh_token,
@@ -31,7 +31,7 @@ type CreateSessionParams struct {
 }
 
 func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (*Session, error) {
-	row := q.db.QueryRowContext(ctx, createSession,
+	row := q.db.QueryRowContext(ctx, createSessionQuery,
 		arg.ID,
 		arg.Username,
 		arg.RefreshToken,
@@ -55,7 +55,7 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (*
 	return &session, err
 }
 
-const getSession = `-- name: GetSession :one
+const getSessionQuery = `-- name: GetSession :one
 SELECT id, username, refresh_token, user_agent, client_ip, is_blocked, expired_at, created_at
 FROM sessions
 WHERE id = $1
@@ -63,7 +63,7 @@ LIMIT 1
 `
 
 func (q *Queries) GetSession(ctx context.Context, id uuid.UUID) (*Session, error) {
-	row := q.db.QueryRowContext(ctx, getSession, id)
+	row := q.db.QueryRowContext(ctx, getSessionQuery, id)
 	var session Session
 	err := row.Scan(
 		&session.ID,
