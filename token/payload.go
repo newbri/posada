@@ -26,11 +26,12 @@ func (payload *Payload) Valid() error {
 }
 
 func NewPayload(username string, role *db.Role, duration time.Duration) *Payload {
+	t := time.Now()
 	return &Payload{
 		ID:        uuid.New(),
 		Username:  username,
-		IssuedAt:  time.Now(),
-		ExpiredAt: time.Now().Add(duration),
+		IssuedAt:  t,
+		ExpiredAt: t.Add(duration),
 		Role:      role,
 	}
 }
