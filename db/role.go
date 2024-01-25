@@ -10,7 +10,7 @@ import (
 const (
 	RoleAdmin     = "admin"
 	RoleCustomer  = "customer"
-	RoleSuperUser = "superUser"
+	RoleSuperUser = "su"
 	RoleVisitor   = "visitor"
 )
 const createRoleQuery = `
