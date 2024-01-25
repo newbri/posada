@@ -49,6 +49,19 @@ func (server *Server) setupRouter() {
 	adminGroup.DELETE("/users/:username", server.deleteUser)
 	adminGroup.POST("/users/all/customer", server.getAllCustomer)
 
+	// su
+	suGroup := authGroup.Group("/su")
+	suGroup.Use(pasetoAuthRole(db.RoleSuperUser))
+	suGroup.POST("/role", server.createRole)
+	suGroup.GET("/role/:id", server.getRole)
+	suGroup.POST("/role/all", server.getAllRole)
+	suGroup.PUT("/role", server.updateRole)
+	suGroup.DELETE("/role/:id", server.deleteRole)
+	suGroup.GET("/users/:username", server.getUser)
+	suGroup.DELETE("/users/:username", server.deleteUser)
+	suGroup.POST("/users/all/customer", server.getAllCustomer)
+	suGroup.POST("/users/all/admin", server.getAllAdmin)
+
 	server.router = router
 }
 
