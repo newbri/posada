@@ -104,8 +104,8 @@ $$
     LANGUAGE plpgsql
     SECURITY DEFINER;
 
-SELECT create_user('root', '$2a$10$ovvoX8WckUAZTEhRLfIWKOcwcp2qeAvNZoAIXrE5ve1PccMGZpSDa', 'System User',
-                   'root@anewball.com', 'su');
+SELECT create_user('su', '$2a$10$ovvoX8WckUAZTEhRLfIWKOcwcp2qeAvNZoAIXrE5ve1PccMGZpSDa', 'Super User',
+                   'su@anewball.com', 'su');
 
 SELECT create_user('anewball', '$2a$10$ovvoX8WckUAZTEhRLfIWKOcwcp2qeAvNZoAIXrE5ve1PccMGZpSDa', 'Andy Newball',
                    'andy.newball@anewball.com', 'admin');
