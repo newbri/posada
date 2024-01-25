@@ -116,6 +116,21 @@ func (mr *MockStoreMockRecorder) DeleteUser(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUser", reflect.TypeOf((*MockStore)(nil).DeleteUser), arg0, arg1)
 }
 
+// GetAllAdmin mocks base method.
+func (m *MockStore) GetAllAdmin(arg0 context.Context, arg1 db.ListUsersParams) ([]*db.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllAdmin", arg0, arg1)
+	ret0, _ := ret[0].([]*db.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllAdmin indicates an expected call of GetAllAdmin.
+func (mr *MockStoreMockRecorder) GetAllAdmin(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllAdmin", reflect.TypeOf((*MockStore)(nil).GetAllAdmin), arg0, arg1)
+}
+
 // GetAllCustomer mocks base method.
 func (m *MockStore) GetAllCustomer(arg0 context.Context, arg1 db.ListUsersParams) ([]*db.User, error) {
 	m.ctrl.T.Helper()

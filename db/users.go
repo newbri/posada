@@ -80,42 +80,11 @@ const getAllUserQuery = `SELECT username, hashed_password, full_name, email, pas
 FROM users INNER JOIN role on users.role_id = role.internal_id WHERE role.name=$1 LIMIT $2 OFFSET $3;`
 
 func (q *Queries) GetAllCustomer(ctx context.Context, arg ListUsersParams) ([]*User, error) {
-	rows, err := q.db.QueryContext(ctx, getAllUserQuery, RoleCustomer, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer func(rows *sql.Rows) {
-		_ = rows.Close()
-	}(rows)
+	return q.getUsersByRole(ctx, getAllUserQuery, RoleCustomer, arg)
+}
 
-	var items []*User
-	for rows.Next() {
-		var user User
-		var role Role
-		if err := rows.Scan(
-			&user.Username,
-			&user.HashedPassword,
-			&user.FullName,
-			&user.Email,
-			&user.PasswordChangedAt,
-			&user.CreatedAt,
-			&role.InternalID,
-		); err != nil {
-			return nil, err
-		}
-		user.Role, err = q.GetRoleByUUID(ctx, role.InternalID)
-		if err != nil {
-			return nil, err
-		}
-		items = append(items, &user)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) GetAllAdmin(ctx context.Context, arg ListUsersParams) ([]*User, error) {
+	return q.getUsersByRole(ctx, getAllUserQuery, RoleAdmin, arg)
 }
 
 type UpdateUserParams struct {
@@ -183,4 +152,43 @@ func (q *Queries) DeleteUser(ctx context.Context, username string) (*User, error
 	}
 	user.Role, err = q.GetRoleByUUID(ctx, role.InternalID)
 	return &user, err
+}
+
+func (q *Queries) getUsersByRole(ctx context.Context, query string, role string, arg ListUsersParams) ([]*User, error) {
+	rows, err := q.db.QueryContext(ctx, query, role, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer func(rows *sql.Rows) {
+		_ = rows.Close()
+	}(rows)
+
+	var items []*User
+	for rows.Next() {
+		var user User
+		var role Role
+		if err := rows.Scan(
+			&user.Username,
+			&user.HashedPassword,
+			&user.FullName,
+			&user.Email,
+			&user.PasswordChangedAt,
+			&user.CreatedAt,
+			&role.InternalID,
+		); err != nil {
+			return nil, err
+		}
+		user.Role, err = q.GetRoleByUUID(ctx, role.InternalID)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, &user)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
