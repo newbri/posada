@@ -416,7 +416,6 @@ func TestGetRole(t *testing.T) {
 				err = json.Unmarshal(data, &request)
 				require.NoError(t, err)
 
-				role := testGetAllRole()[0]
 				require.Equal(t, role.ExternalID, request.ExternalID)
 				require.Equal(t, role.Name, request.Name)
 				require.Equal(t, role.Description, request.Description)
@@ -578,12 +577,11 @@ func TestUpdateRole(t *testing.T) {
 				err = json.Unmarshal(data, &request)
 				require.NoError(t, err)
 
-				role := testGetAllRole()[0]
 				require.Equal(t, role.ExternalID, request.ExternalID)
 				require.Equal(t, role.Name, request.Name)
 				require.Equal(t, role.Description, request.Description)
 				require.Equal(t, role.CreatedAt.Unix(), request.CreatedAt.Unix())
-				require.Equal(t, role.CreatedAt.Unix(), request.UpdatedAt.Unix())
+				require.Equal(t, role.UpdatedAt.Unix(), request.UpdatedAt.Unix())
 			},
 			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
@@ -794,12 +792,11 @@ func TestDeleteRole(t *testing.T) {
 				err = json.Unmarshal(data, &request)
 				require.NoError(t, err)
 
-				role := testGetAllRole()[0]
 				require.Equal(t, role.ExternalID, request.ExternalID)
 				require.Equal(t, role.Name, request.Name)
 				require.Equal(t, role.Description, request.Description)
 				require.Equal(t, role.CreatedAt.Unix(), request.CreatedAt.Unix())
-				require.Equal(t, role.CreatedAt.Unix(), request.UpdatedAt.Unix())
+				require.Equal(t, role.UpdatedAt.Unix(), request.UpdatedAt.Unix())
 			},
 			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
@@ -919,30 +916,33 @@ func TestDeleteRole(t *testing.T) {
 }
 
 func testGetAllRole() []*db.Role {
+	t1 := time.Now()
+	t2 := time.Now()
+	t3 := time.Now()
 	return []*db.Role{
 		{
 			InternalID:  uuid.New(),
 			Name:        "Admin",
 			Description: "Administrator's Role",
 			ExternalID:  "URE101",
-			UpdatedAt:   time.Now(),
-			CreatedAt:   time.Now(),
+			UpdatedAt:   t1,
+			CreatedAt:   t1,
 		},
 		{
 			InternalID:  uuid.New(),
 			Name:        "visitor",
 			Description: "Visitor's Role",
 			ExternalID:  "URE101",
-			UpdatedAt:   time.Now(),
-			CreatedAt:   time.Now(),
+			UpdatedAt:   t2,
+			CreatedAt:   t2,
 		},
 		{
 			InternalID:  uuid.New(),
 			Name:        "customer",
 			Description: "Customer's Role",
 			ExternalID:  "URE101",
-			UpdatedAt:   time.Now(),
-			CreatedAt:   time.Now(),
+			UpdatedAt:   t3,
+			CreatedAt:   t3,
 		},
 	}
 }

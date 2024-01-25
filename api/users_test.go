@@ -82,7 +82,7 @@ func EqUpdateUserParams(arg db.UpdateUserParams, password string) gomock.Matcher
 func TestCreateUser(t *testing.T) {
 	password := "lexy84"
 	longPassword := util.RandomString(73)
-	expectedUser := createRandomUser()
+	expectedUser := createRandomUser(db.RoleAdmin)
 
 	testCases := []struct {
 		name          string
@@ -337,7 +337,7 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestGetUser(t *testing.T) {
-	expectedUser := createRandomUser()
+	expectedUser := createRandomUser(db.RoleAdmin)
 
 	testCases := []struct {
 		name          string
@@ -477,7 +477,7 @@ func TestGetUser(t *testing.T) {
 func TestUpdateUser(t *testing.T) {
 	password := "lexy84"
 	longPassword := util.RandomString(73)
-	expectedUser := createRandomUser()
+	expectedUser := createRandomUser(db.RoleAdmin)
 
 	testCases := []struct {
 		name          string
@@ -738,7 +738,7 @@ func TestUpdateUser(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
-	expectedUser := createRandomUser()
+	expectedUser := createRandomUser(db.RoleAdmin)
 
 	testCases := []struct {
 		name          string
@@ -1221,7 +1221,7 @@ func TestLoginUser(t *testing.T) {
 }
 
 func TestUserInfo(t *testing.T) {
-	expectedUser := createRandomUser()
+	expectedUser := createRandomUser(db.RoleAdmin)
 
 	testCases := []struct {
 		name          string
@@ -1336,7 +1336,221 @@ func TestUserInfo(t *testing.T) {
 	}
 }
 
-func createRandomUser() *db.User {
+func TestGetAllCustomerUser(t *testing.T) {
+	expectedUser := createRandomUser(db.RoleAdmin)
+	var allCustomer []*db.User
+	for i := 0; i < 6; i++ {
+		allCustomer = append(allCustomer, createRandomUser(db.RoleCustomer))
+	}
+
+	testCases := []struct {
+		name     string
+		env      string
+		body     gin.H
+		mock     func(server *Server)
+		response func(recorder *httptest.ResponseRecorder)
+		auth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+	}{
+		{
+			name: "OK",
+			env:  "test",
+			body: gin.H{
+				"offset": 0,
+				"limit":  6,
+			},
+			mock: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				store.EXPECT().
+					GetAllCustomerUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(allCustomer, nil)
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+
+				data, err := io.ReadAll(recorder.Body)
+				require.NoError(t, err)
+
+				var request []*userResponse
+				err = json.Unmarshal(data, &request)
+				require.NoError(t, err)
+
+				for i, user := range allCustomer {
+					expectedUser := &userResponse{
+						Username:          user.Username,
+						FullName:          user.FullName,
+						Email:             user.Email,
+						PasswordChangedAt: user.PasswordChangedAt,
+						CreatedAt:         user.CreatedAt,
+						Role:              user.Role,
+					}
+					require.Equal(t, expectedUser.Username, request[i].Username)
+					require.Equal(t, expectedUser.FullName, request[i].FullName)
+					require.Equal(t, expectedUser.Email, request[i].Email)
+					require.Equal(t, expectedUser.PasswordChangedAt.Unix(), request[i].PasswordChangedAt.Unix())
+					require.Equal(t, expectedUser.CreatedAt.Unix(), request[i].CreatedAt.Unix())
+				}
+			},
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					expectedUser.Username,
+					expectedUser.Role,
+					time.Minute,
+				)
+			},
+		},
+		{
+			name: "BadRequest",
+			env:  "test",
+			body: gin.H{
+				"offset": 0,
+				"limit1": 6,
+			},
+			mock: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				store.EXPECT().
+					GetAllCustomerUser(gomock.Any(), gomock.Any()).
+					Times(0)
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					expectedUser.Username,
+					expectedUser.Role,
+					time.Minute,
+				)
+			},
+		},
+		{
+			name: "ErrNoRows",
+			env:  "test",
+			body: gin.H{
+				"offset": 0,
+				"limit":  6,
+			},
+			mock: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				store.EXPECT().
+					GetAllCustomerUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(nil, sql.ErrNoRows)
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusNotFound, recorder.Code)
+			},
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					expectedUser.Username,
+					expectedUser.Role,
+					time.Minute,
+				)
+			},
+		},
+		{
+			name: "InternalServerError",
+			env:  "test",
+			body: gin.H{
+				"offset": 0,
+				"limit":  6,
+			},
+			mock: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				store.EXPECT().
+					GetAllCustomerUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(nil, sql.ErrConnDone)
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					expectedUser.Username,
+					expectedUser.Role,
+					time.Minute,
+				)
+			},
+		},
+		{
+			name: "NoCustomerFound",
+			env:  "test",
+			body: gin.H{
+				"offset": 0,
+				"limit":  6,
+			},
+			mock: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				store.EXPECT().
+					GetAllCustomerUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(nil, nil)
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusNotFound, recorder.Code)
+			},
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					expectedUser.Username,
+					expectedUser.Role,
+					time.Minute,
+				)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			store := mockdb.NewMockStore(ctrl)
+			server := newTestServer(store)
+			tc.mock(server)
+
+			// Marshal body data to JSON
+			data, err := json.Marshal(tc.body)
+			require.NoError(t, err)
+
+			url := "/api/auth/admin/users/all/customer"
+			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
+			require.NoError(t, err)
+
+			tc.auth(t, request, server.tokenMaker)
+			recorder := httptest.NewRecorder()
+			server.router.ServeHTTP(recorder, request)
+			tc.response(recorder)
+		})
+	}
+}
+
+func createRandomUser(role string) *db.User {
 	hashedPassword, err := util.HashPassword(util.RandomString(6))
 	if err != nil {
 		return nil
@@ -1351,9 +1565,9 @@ func createRandomUser() *db.User {
 		CreatedAt:         time.Now(),
 		Role: &db.Role{
 			InternalID:  uuid.New(),
-			Name:        db.RoleAdmin,
-			Description: "Administration's role",
-			ExternalID:  "URE101",
+			Name:        role,
+			Description: util.RandomString(16),
+			ExternalID:  fmt.Sprintf("URE%d", util.RandomInt(101, 999)),
 			UpdatedAt:   time.Now(),
 			CreatedAt:   time.Now(),
 		},
