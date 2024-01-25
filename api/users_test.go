@@ -1563,14 +1563,19 @@ func createRandomUser(role string) *db.User {
 		Email:             util.RandomEmail(),
 		PasswordChangedAt: time.Now(),
 		CreatedAt:         time.Now(),
-		Role: &db.Role{
-			InternalID:  uuid.New(),
-			Name:        role,
-			Description: util.RandomString(16),
-			ExternalID:  fmt.Sprintf("URE%d", util.RandomInt(101, 999)),
-			UpdatedAt:   time.Now(),
-			CreatedAt:   time.Now(),
-		},
+		Role:              createRandomRole(role),
+	}
+}
+
+func createRandomRole(roleType string) *db.Role {
+	t := time.Now()
+	return &db.Role{
+		InternalID:  uuid.New(),
+		Name:        roleType,
+		Description: util.RandomString(16),
+		ExternalID:  fmt.Sprintf("URE%d", util.RandomInt(101, 999)),
+		UpdatedAt:   t,
+		CreatedAt:   t,
 	}
 }
 
