@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"github.com/newbri/posadamissportia/db"
 	mockdb "github.com/newbri/posadamissportia/db/mock"
@@ -195,6 +194,7 @@ func TestCreateRole(t *testing.T) {
 }
 
 func TestGetAllRole(t *testing.T) {
+	roles := testGetAllRole()
 	user := createRandomUser(db.RoleAdmin)
 
 	testCases := []struct {
@@ -216,7 +216,6 @@ func TestGetAllRole(t *testing.T) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
 
-				roles := testGetAllRole()
 				store.
 					EXPECT().
 					GetAllRole(gomock.Any(), gomock.Any()).
@@ -234,7 +233,6 @@ func TestGetAllRole(t *testing.T) {
 				err = json.Unmarshal(data, &request)
 				require.NoError(t, err)
 
-				roles := testGetAllRole()
 				for i := range request {
 					require.Equal(t, roles[i].ExternalID, request[i].ExternalID)
 					require.Equal(t, roles[i].Name, request[i].Name)
@@ -612,7 +610,6 @@ func TestUpdateRole(t *testing.T) {
 				err = json.Unmarshal(data, &request)
 				require.NoError(t, err)
 
-				role := testGetAllRole()[0]
 				require.Equal(t, role.ExternalID, request.ExternalID)
 				require.Equal(t, role.Name, request.Name)
 				require.Equal(t, role.Description, request.Description)
@@ -907,33 +904,9 @@ func TestDeleteRole(t *testing.T) {
 }
 
 func testGetAllRole() []*db.Role {
-	t1 := time.Now()
-	t2 := time.Now()
-	t3 := time.Now()
-	return []*db.Role{
-		{
-			InternalID:  uuid.New(),
-			Name:        "Admin",
-			Description: "Administrator's Role",
-			ExternalID:  "URE101",
-			UpdatedAt:   t1,
-			CreatedAt:   t1,
-		},
-		{
-			InternalID:  uuid.New(),
-			Name:        "visitor",
-			Description: "Visitor's Role",
-			ExternalID:  "URE101",
-			UpdatedAt:   t2,
-			CreatedAt:   t2,
-		},
-		{
-			InternalID:  uuid.New(),
-			Name:        "customer",
-			Description: "Customer's Role",
-			ExternalID:  "URE101",
-			UpdatedAt:   t3,
-			CreatedAt:   t3,
-		},
-	}
+	var roles []*db.Role
+	roles = append(roles, createRandomRole(db.RoleAdmin))
+	roles = append(roles, createRandomRole(db.RoleVisitor))
+	roles = append(roles, createRandomRole(db.RoleCustomer))
+	return roles
 }
