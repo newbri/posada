@@ -1548,21 +1548,15 @@ func createRandomUserAndPassword() (*db.User, string) {
 		return nil, ""
 	}
 
+	t := time.Now()
 	return &db.User{
 		Username:          util.RandomOwner(),
 		HashedPassword:    hashedPassword,
 		FullName:          fmt.Sprintf("%s %s", util.RandomOwner(), util.RandomOwner()),
 		Email:             util.RandomEmail(),
-		PasswordChangedAt: time.Now(),
-		CreatedAt:         time.Now(),
-		Role: &db.Role{
-			InternalID:  uuid.New(),
-			Name:        db.RoleAdmin,
-			Description: "Administration's role",
-			ExternalID:  "URE101",
-			UpdatedAt:   time.Now(),
-			CreatedAt:   time.Now(),
-		},
+		PasswordChangedAt: t,
+		CreatedAt:         t,
+		Role:              createRandomRole(db.RoleAdmin),
 	}, password
 }
 
