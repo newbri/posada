@@ -78,6 +78,9 @@ ALTER TABLE IF EXISTS "property_user"
 CREATE SEQUENCE IF NOT EXISTS "role_sequence" START 101;
 
 INSERT INTO "role" (internal_id, name, description, external_id)
+VALUES (gen_random_uuid(), 'su', E'Super user\'s role', CONCAT('URE', nextval('role_sequence')));
+
+INSERT INTO "role" (internal_id, name, description, external_id)
 VALUES (gen_random_uuid(), 'admin', E'Administrator\'s role', CONCAT('URE', nextval('role_sequence')));
 
 INSERT INTO "role" (internal_id, name, description, external_id)
@@ -100,6 +103,9 @@ END;
 $$
     LANGUAGE plpgsql
     SECURITY DEFINER;
+
+SELECT create_user('root', '$2a$10$ovvoX8WckUAZTEhRLfIWKOcwcp2qeAvNZoAIXrE5ve1PccMGZpSDa', 'System User',
+                   'root@anewball.com', 'su');
 
 SELECT create_user('anewball', '$2a$10$ovvoX8WckUAZTEhRLfIWKOcwcp2qeAvNZoAIXrE5ve1PccMGZpSDa', 'Andy Newball',
                    'andy.newball@anewball.com', 'admin');
