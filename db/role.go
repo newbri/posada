@@ -10,6 +10,7 @@ import (
 const (
 	RoleAdmin    = "admin"
 	RoleCustomer = "customer"
+	RoleRoot     = "root"
 )
 const createRoleQuery = `
 INSERT INTO role (internal_id, name, description, external_id) 
