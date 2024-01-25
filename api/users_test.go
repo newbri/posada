@@ -85,11 +85,11 @@ func TestCreateUser(t *testing.T) {
 	expectedUser := createRandomUser(db.RoleAdmin)
 
 	testCases := []struct {
-		name          string
-		env           string
-		body          gin.H
-		mock          func(server *Server)
-		checkResponse func(recorder *httptest.ResponseRecorder)
+		name     string
+		env      string
+		body     gin.H
+		mock     func(server *Server)
+		response func(recorder *httptest.ResponseRecorder)
 	}{
 		{
 			name: "OK",
@@ -117,7 +117,7 @@ func TestCreateUser(t *testing.T) {
 					Times(1).
 					Return(expectedUser, nil)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
 
 				data, err := io.ReadAll(recorder.Body)
@@ -158,7 +158,7 @@ func TestCreateUser(t *testing.T) {
 					CreateUser(gomock.Any(), EqCreateUserParams(arg, password)).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
@@ -186,7 +186,7 @@ func TestCreateUser(t *testing.T) {
 					CreateUser(gomock.Any(), EqCreateUserParams(arg, longPassword)).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 		},
@@ -216,7 +216,7 @@ func TestCreateUser(t *testing.T) {
 					Times(1).
 					Return(nil, &pq.Error{Code: "23505"})
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusForbidden, recorder.Code)
 			},
 		},
@@ -246,7 +246,7 @@ func TestCreateUser(t *testing.T) {
 					Times(1).
 					Return(nil, sql.ErrConnDone)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 		},
@@ -269,7 +269,7 @@ func TestCreateUser(t *testing.T) {
 					Times(1).
 					Return(nil, fmt.Errorf("error exist"))
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
@@ -293,7 +293,7 @@ func TestCreateUser(t *testing.T) {
 
 			recorder := httptest.NewRecorder()
 			server.router.ServeHTTP(recorder, request)
-			tc.checkResponse(recorder)
+			tc.response(recorder)
 		})
 	}
 }
@@ -302,22 +302,22 @@ func TestGetUser(t *testing.T) {
 	expectedUser := createRandomUser(db.RoleAdmin)
 
 	testCases := []struct {
-		name          string
-		username      string
-		buildStubs    func(store *mockdb.MockStore)
-		checkResponse func(recorder *httptest.ResponseRecorder)
-		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+		name     string
+		username string
+		mock     func(store *mockdb.MockStore)
+		response func(recorder *httptest.ResponseRecorder)
+		auth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 	}{
 		{
 			name:     "OK",
 			username: expectedUser.Username,
-			buildStubs: func(store *mockdb.MockStore) {
+			mock: func(store *mockdb.MockStore) {
 				store.EXPECT().
 					GetUser(gomock.Any(), expectedUser.Username).
 					Times(1).
 					Return(expectedUser, nil)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
 
 				data, err := io.ReadAll(recorder.Body)
@@ -333,7 +333,7 @@ func TestGetUser(t *testing.T) {
 				require.Equal(t, expectedUser.PasswordChangedAt.Unix(), request.PasswordChangedAt.Unix())
 				require.Equal(t, expectedUser.CreatedAt.Unix(), request.CreatedAt.Unix())
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -347,15 +347,15 @@ func TestGetUser(t *testing.T) {
 		{
 			name:     "StatusBadRequest",
 			username: "-@",
-			buildStubs: func(store *mockdb.MockStore) {
+			mock: func(store *mockdb.MockStore) {
 				store.EXPECT().
 					GetUser(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -369,16 +369,16 @@ func TestGetUser(t *testing.T) {
 		{
 			name:     "StatusNotFound",
 			username: expectedUser.Username,
-			buildStubs: func(store *mockdb.MockStore) {
+			mock: func(store *mockdb.MockStore) {
 				store.EXPECT().
 					GetUser(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(nil, sql.ErrNoRows)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -392,16 +392,16 @@ func TestGetUser(t *testing.T) {
 		{
 			name:     "StatusInternalServerError",
 			username: expectedUser.Username,
-			buildStubs: func(store *mockdb.MockStore) {
+			mock: func(store *mockdb.MockStore) {
 				store.EXPECT().
 					GetUser(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(nil, sql.ErrConnDone)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -420,7 +420,7 @@ func TestGetUser(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
-			tc.buildStubs(store)
+			tc.mock(store)
 
 			server := newTestServer(store)
 			recorder := httptest.NewRecorder()
@@ -429,9 +429,9 @@ func TestGetUser(t *testing.T) {
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
-			tc.setupAuth(t, request, server.tokenMaker)
+			tc.auth(t, request, server.tokenMaker)
 			server.router.ServeHTTP(recorder, request)
-			tc.checkResponse(recorder)
+			tc.response(recorder)
 		})
 	}
 }
@@ -442,12 +442,12 @@ func TestUpdateUser(t *testing.T) {
 	expectedUser := createRandomUser(db.RoleAdmin)
 
 	testCases := []struct {
-		name          string
-		body          gin.H
-		username      string
-		buildStubs    func(store *mockdb.MockStore)
-		checkResponse func(recorder *httptest.ResponseRecorder)
-		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+		name     string
+		body     gin.H
+		username string
+		mock     func(store *mockdb.MockStore)
+		response func(recorder *httptest.ResponseRecorder)
+		auth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 	}{
 		{
 			name: "OK",
@@ -456,7 +456,7 @@ func TestUpdateUser(t *testing.T) {
 				"email":    expectedUser.Email,
 			},
 			username: expectedUser.Username,
-			buildStubs: func(store *mockdb.MockStore) {
+			mock: func(store *mockdb.MockStore) {
 				args := db.UpdateUserParams{
 					Username: expectedUser.Username,
 					Email: sql.NullString{
@@ -470,7 +470,7 @@ func TestUpdateUser(t *testing.T) {
 					Times(1).
 					Return(expectedUser, nil)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
 
 				data, err := io.ReadAll(recorder.Body)
@@ -486,7 +486,7 @@ func TestUpdateUser(t *testing.T) {
 				require.Equal(t, expectedUser.PasswordChangedAt.Unix(), request.PasswordChangedAt.Unix())
 				require.Equal(t, expectedUser.CreatedAt.Unix(), request.CreatedAt.Unix())
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -505,7 +505,7 @@ func TestUpdateUser(t *testing.T) {
 				"full_name": expectedUser.FullName,
 			},
 			username: expectedUser.Username,
-			buildStubs: func(store *mockdb.MockStore) {
+			mock: func(store *mockdb.MockStore) {
 				args := db.UpdateUserParams{
 					Username: expectedUser.Username,
 					FullName: sql.NullString{
@@ -519,7 +519,7 @@ func TestUpdateUser(t *testing.T) {
 					Times(1).
 					Return(expectedUser, nil)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
 
 				data, err := io.ReadAll(recorder.Body)
@@ -535,7 +535,7 @@ func TestUpdateUser(t *testing.T) {
 				require.Equal(t, expectedUser.PasswordChangedAt.Unix(), request.PasswordChangedAt.Unix())
 				require.Equal(t, expectedUser.CreatedAt.Unix(), request.CreatedAt.Unix())
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -549,15 +549,15 @@ func TestUpdateUser(t *testing.T) {
 		{
 			name:     "StatusBadRequest",
 			username: "-@",
-			buildStubs: func(store *mockdb.MockStore) {
+			mock: func(store *mockdb.MockStore) {
 				store.EXPECT().
 					UpdateUser(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -576,7 +576,7 @@ func TestUpdateUser(t *testing.T) {
 				"password":  longPassword,
 				"full_name": expectedUser.FullName,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			mock: func(store *mockdb.MockStore) {
 				args := db.UpdateUserParams{
 					Username: expectedUser.Username,
 					FullName: sql.NullString{
@@ -588,10 +588,10 @@ func TestUpdateUser(t *testing.T) {
 					UpdateUser(gomock.Any(), EqUpdateUserParams(args, longPassword)).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -610,7 +610,7 @@ func TestUpdateUser(t *testing.T) {
 				"password":  password,
 				"full_name": expectedUser.FullName,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			mock: func(store *mockdb.MockStore) {
 				args := db.UpdateUserParams{
 					Username: expectedUser.Username,
 					FullName: sql.NullString{
@@ -623,10 +623,10 @@ func TestUpdateUser(t *testing.T) {
 					Times(1).
 					Return(nil, sql.ErrNoRows)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -645,7 +645,7 @@ func TestUpdateUser(t *testing.T) {
 				"password":  password,
 				"full_name": expectedUser.FullName,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			mock: func(store *mockdb.MockStore) {
 				args := db.UpdateUserParams{
 					Username: expectedUser.Username,
 					FullName: sql.NullString{
@@ -658,10 +658,10 @@ func TestUpdateUser(t *testing.T) {
 					Times(1).
 					Return(nil, sql.ErrConnDone)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -680,7 +680,7 @@ func TestUpdateUser(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
-			tc.buildStubs(store)
+			tc.mock(store)
 
 			server := newTestServer(store)
 			recorder := httptest.NewRecorder()
@@ -692,9 +692,9 @@ func TestUpdateUser(t *testing.T) {
 			request, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
-			tc.setupAuth(t, request, server.tokenMaker)
+			tc.auth(t, request, server.tokenMaker)
 			server.router.ServeHTTP(recorder, request)
-			tc.checkResponse(recorder)
+			tc.response(recorder)
 		})
 	}
 }
@@ -703,22 +703,22 @@ func TestDeleteUser(t *testing.T) {
 	expectedUser := createRandomUser(db.RoleAdmin)
 
 	testCases := []struct {
-		name          string
-		username      string
-		buildStubs    func(store *mockdb.MockStore)
-		checkResponse func(recorder *httptest.ResponseRecorder)
-		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+		name     string
+		username string
+		mock     func(store *mockdb.MockStore)
+		response func(recorder *httptest.ResponseRecorder)
+		auth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 	}{
 		{
 			name:     "OK",
 			username: expectedUser.Username,
-			buildStubs: func(store *mockdb.MockStore) {
+			mock: func(store *mockdb.MockStore) {
 				store.EXPECT().
 					DeleteUser(gomock.Any(), expectedUser.Username).
 					Times(1).
 					Return(expectedUser, nil)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
 
 				data, err := io.ReadAll(recorder.Body)
@@ -734,7 +734,7 @@ func TestDeleteUser(t *testing.T) {
 				require.Equal(t, expectedUser.PasswordChangedAt.Unix(), request.PasswordChangedAt.Unix())
 				require.Equal(t, expectedUser.CreatedAt.Unix(), request.CreatedAt.Unix())
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -748,15 +748,15 @@ func TestDeleteUser(t *testing.T) {
 		{
 			name:     "StatusBadRequest",
 			username: "-@",
-			buildStubs: func(store *mockdb.MockStore) {
+			mock: func(store *mockdb.MockStore) {
 				store.EXPECT().
 					DeleteUser(gomock.Any(), expectedUser.Username).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -770,16 +770,16 @@ func TestDeleteUser(t *testing.T) {
 		{
 			name:     "StatusNotFound",
 			username: expectedUser.Username,
-			buildStubs: func(store *mockdb.MockStore) {
+			mock: func(store *mockdb.MockStore) {
 				store.EXPECT().
 					DeleteUser(gomock.Any(), expectedUser.Username).
 					Times(1).
 					Return(nil, sql.ErrNoRows)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -793,16 +793,16 @@ func TestDeleteUser(t *testing.T) {
 		{
 			name:     "StatusInternalServerError",
 			username: expectedUser.Username,
-			buildStubs: func(store *mockdb.MockStore) {
+			mock: func(store *mockdb.MockStore) {
 				store.EXPECT().
 					DeleteUser(gomock.Any(), expectedUser.Username).
 					Times(1).
 					Return(nil, sql.ErrConnDone)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -821,7 +821,7 @@ func TestDeleteUser(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
-			tc.buildStubs(store)
+			tc.mock(store)
 
 			server := newTestServer(store)
 			recorder := httptest.NewRecorder()
@@ -830,9 +830,9 @@ func TestDeleteUser(t *testing.T) {
 			request, err := http.NewRequest(http.MethodDelete, url, nil)
 			require.NoError(t, err)
 
-			tc.setupAuth(t, request, server.tokenMaker)
+			tc.auth(t, request, server.tokenMaker)
 			server.router.ServeHTTP(recorder, request)
-			tc.checkResponse(recorder)
+			tc.response(recorder)
 		})
 	}
 }
@@ -841,11 +841,11 @@ func TestLoginUser(t *testing.T) {
 	expectedUser, password := createRandomUserAndPassword()
 
 	testCases := []struct {
-		name          string
-		env           string
-		body          gin.H
-		buildStubs    func(server *Server)
-		checkResponse func(recorder *httptest.ResponseRecorder)
+		name     string
+		env      string
+		body     gin.H
+		mock     func(server *Server)
+		response func(recorder *httptest.ResponseRecorder)
 	}{
 		{
 			name: "OK",
@@ -854,7 +854,7 @@ func TestLoginUser(t *testing.T) {
 				"username": expectedUser.Username,
 				"password": password,
 			},
-			buildStubs: func(server *Server) {
+			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
 
@@ -913,7 +913,7 @@ func TestLoginUser(t *testing.T) {
 					Times(1).
 					Return(session, nil)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
 			},
 		},
@@ -924,7 +924,7 @@ func TestLoginUser(t *testing.T) {
 				"username": "NotFound",
 				"password": password,
 			},
-			buildStubs: func(server *Server) {
+			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
 
@@ -934,7 +934,7 @@ func TestLoginUser(t *testing.T) {
 					Times(1).
 					Return(nil, sql.ErrNoRows)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
 			},
 		},
@@ -945,7 +945,7 @@ func TestLoginUser(t *testing.T) {
 				"username": expectedUser.Username,
 				"password": "incorrect",
 			},
-			buildStubs: func(server *Server) {
+			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
 
@@ -955,7 +955,7 @@ func TestLoginUser(t *testing.T) {
 					Times(1).
 					Return(expectedUser, nil)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusUnauthorized, recorder.Code)
 			},
 		},
@@ -966,7 +966,7 @@ func TestLoginUser(t *testing.T) {
 				"username": expectedUser.Username,
 				"password": password,
 			},
-			buildStubs: func(server *Server) {
+			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
 
@@ -976,7 +976,7 @@ func TestLoginUser(t *testing.T) {
 					Times(1).
 					Return(nil, sql.ErrConnDone)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 		},
@@ -987,7 +987,7 @@ func TestLoginUser(t *testing.T) {
 				"username":  "NotFound",
 				"password1": password,
 			},
-			buildStubs: func(server *Server) {
+			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
 
@@ -996,7 +996,7 @@ func TestLoginUser(t *testing.T) {
 					GetUser(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
@@ -1007,7 +1007,7 @@ func TestLoginUser(t *testing.T) {
 				"username": expectedUser.Username,
 				"password": password,
 			},
-			buildStubs: func(server *Server) {
+			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
 
@@ -1017,7 +1017,7 @@ func TestLoginUser(t *testing.T) {
 					Times(1).
 					Return(nil, sql.ErrNoRows)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
 			},
 		},
@@ -1028,7 +1028,7 @@ func TestLoginUser(t *testing.T) {
 				"username": expectedUser.Username,
 				"password": password,
 			},
-			buildStubs: func(server *Server) {
+			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
 
@@ -1048,7 +1048,7 @@ func TestLoginUser(t *testing.T) {
 					Return("", nil, errors.New("failed to create chacha20poly1305 cipher")).
 					AnyTimes()
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 		},
@@ -1059,7 +1059,7 @@ func TestLoginUser(t *testing.T) {
 				"username": expectedUser.Username,
 				"password": password,
 			},
-			buildStubs: func(server *Server) {
+			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
 
@@ -1091,7 +1091,7 @@ func TestLoginUser(t *testing.T) {
 					Return("", nil, errors.New("failed to create chacha20poly1305 cipher")).
 					AnyTimes()
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 		},
@@ -1102,7 +1102,7 @@ func TestLoginUser(t *testing.T) {
 				"username": expectedUser.Username,
 				"password": password,
 			},
-			buildStubs: func(server *Server) {
+			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
 
@@ -1150,7 +1150,7 @@ func TestLoginUser(t *testing.T) {
 					Return(refreshToken, refreshPayload, err).
 					AnyTimes()
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 		},
@@ -1165,7 +1165,7 @@ func TestLoginUser(t *testing.T) {
 			maker := mockdb.NewMockMaker(ctrl)
 
 			server := newServer(store, maker, tc.env)
-			tc.buildStubs(server)
+			tc.mock(server)
 
 			// Marshal body data to JSON
 			data, err := json.Marshal(tc.body)
@@ -1177,7 +1177,7 @@ func TestLoginUser(t *testing.T) {
 
 			recorder := httptest.NewRecorder()
 			server.router.ServeHTTP(recorder, request)
-			tc.checkResponse(recorder)
+			tc.response(recorder)
 		})
 	}
 }
@@ -1186,22 +1186,22 @@ func TestUserInfo(t *testing.T) {
 	expectedUser := createRandomUser(db.RoleAdmin)
 
 	testCases := []struct {
-		name          string
-		username      string
-		buildStubs    func(store *mockdb.MockStore)
-		checkResponse func(recorder *httptest.ResponseRecorder)
-		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+		name     string
+		username string
+		mock     func(store *mockdb.MockStore)
+		response func(recorder *httptest.ResponseRecorder)
+		auth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 	}{
 		{
 			name:     "OK",
 			username: expectedUser.Username,
-			buildStubs: func(store *mockdb.MockStore) {
+			mock: func(store *mockdb.MockStore) {
 				store.EXPECT().
 					GetUser(gomock.Any(), expectedUser.Username).
 					Times(1).
 					Return(expectedUser, nil)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
 
 				data, err := io.ReadAll(recorder.Body)
@@ -1217,7 +1217,7 @@ func TestUserInfo(t *testing.T) {
 				require.Equal(t, expectedUser.PasswordChangedAt.Unix(), request.PasswordChangedAt.Unix())
 				require.Equal(t, expectedUser.CreatedAt.Unix(), request.CreatedAt.Unix())
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -1231,16 +1231,16 @@ func TestUserInfo(t *testing.T) {
 		{
 			name:     "StatusNotFound",
 			username: expectedUser.Username,
-			buildStubs: func(store *mockdb.MockStore) {
+			mock: func(store *mockdb.MockStore) {
 				store.EXPECT().
 					GetUser(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(nil, sql.ErrNoRows)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -1254,16 +1254,16 @@ func TestUserInfo(t *testing.T) {
 		{
 			name:     "StatusInternalServerError",
 			username: expectedUser.Username,
-			buildStubs: func(store *mockdb.MockStore) {
+			mock: func(store *mockdb.MockStore) {
 				store.EXPECT().
 					GetUser(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(nil, sql.ErrConnDone)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
+			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -1282,7 +1282,7 @@ func TestUserInfo(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
-			tc.buildStubs(store)
+			tc.mock(store)
 
 			server := newTestServer(store)
 			recorder := httptest.NewRecorder()
@@ -1291,9 +1291,9 @@ func TestUserInfo(t *testing.T) {
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
-			tc.setupAuth(t, request, server.tokenMaker)
+			tc.auth(t, request, server.tokenMaker)
 			server.router.ServeHTTP(recorder, request)
-			tc.checkResponse(recorder)
+			tc.response(recorder)
 		})
 	}
 }
@@ -1518,13 +1518,14 @@ func createRandomUser(role string) *db.User {
 		return nil
 	}
 
+	t := time.Now()
 	return &db.User{
 		Username:          util.RandomOwner(),
 		HashedPassword:    hashedPassword,
 		FullName:          fmt.Sprintf("%s %s", util.RandomOwner(), util.RandomOwner()),
 		Email:             util.RandomEmail(),
-		PasswordChangedAt: time.Now(),
-		CreatedAt:         time.Now(),
+		PasswordChangedAt: t,
+		CreatedAt:         t,
 		Role:              createRandomRole(role),
 	}
 }
