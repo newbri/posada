@@ -88,7 +88,7 @@ func TestCreateUser(t *testing.T) {
 		name          string
 		env           string
 		body          gin.H
-		buildStubs    func(server *Server)
+		mock          func(server *Server)
 		checkResponse func(recorder *httptest.ResponseRecorder)
 	}{
 		{
@@ -100,7 +100,7 @@ func TestCreateUser(t *testing.T) {
 				"full_name": expectedUser.FullName,
 				"email":     expectedUser.Email,
 			},
-			buildStubs: func(server *Server) {
+			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
 
@@ -143,7 +143,7 @@ func TestCreateUser(t *testing.T) {
 				"full_name": expectedUser.FullName,
 				"email1":    expectedUser.Email,
 			},
-			buildStubs: func(server *Server) {
+			mock: func(server *Server) {
 				arg := db.CreateUserParams{
 					Username: expectedUser.Username,
 					FullName: expectedUser.FullName,
@@ -171,7 +171,7 @@ func TestCreateUser(t *testing.T) {
 				"full_name": expectedUser.FullName,
 				"email":     expectedUser.Email,
 			},
-			buildStubs: func(server *Server) {
+			mock: func(server *Server) {
 				arg := db.CreateUserParams{
 					Username: expectedUser.Username,
 					FullName: expectedUser.FullName,
@@ -199,7 +199,7 @@ func TestCreateUser(t *testing.T) {
 				"full_name": expectedUser.FullName,
 				"email":     expectedUser.Email,
 			},
-			buildStubs: func(server *Server) {
+			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
 
@@ -229,7 +229,7 @@ func TestCreateUser(t *testing.T) {
 				"full_name": expectedUser.FullName,
 				"email":     expectedUser.Email,
 			},
-			buildStubs: func(server *Server) {
+			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
 
@@ -259,7 +259,7 @@ func TestCreateUser(t *testing.T) {
 				"full_name": expectedUser.FullName,
 				"email":     expectedUser.Email,
 			},
-			buildStubs: func(server *Server) {
+			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
 
@@ -282,7 +282,7 @@ func TestCreateUser(t *testing.T) {
 
 			store := mockdb.NewMockStore(ctrl)
 			server := newTestServer(store)
-			tc.buildStubs(server)
+			tc.mock(server)
 
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
