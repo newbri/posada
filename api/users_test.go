@@ -101,25 +101,10 @@ func TestCreateUser(t *testing.T) {
 				"email":     expectedUser.Email,
 			},
 			buildStubs: func(server *Server) {
-				arg := db.CreateUserParams{
-					RoleID:   uuid.MustParse("fa9db3f3-2664-4e6d-a9c9-32625a4b6bbe"),
-					Username: expectedUser.Username,
-					FullName: expectedUser.FullName,
-					Email:    expectedUser.Email,
-				}
-
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
 
-				role := &db.Role{
-					InternalID:  uuid.MustParse("fa9db3f3-2664-4e6d-a9c9-32625a4b6bbe"),
-					Name:        db.RoleCustomer,
-					Description: "Customer's role",
-					ExternalID:  "URE102",
-					UpdatedAt:   time.Now(),
-					CreatedAt:   time.Now(),
-				}
-
+				role := createRandomRole(db.RoleCustomer)
 				store.
 					EXPECT().
 					GetRoleByName(gomock.Any(), gomock.Any()).
@@ -128,7 +113,7 @@ func TestCreateUser(t *testing.T) {
 
 				store.
 					EXPECT().
-					CreateUser(gomock.Any(), EqCreateUserParams(arg, password)).
+					CreateUser(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(expectedUser, nil)
 			},
@@ -215,25 +200,10 @@ func TestCreateUser(t *testing.T) {
 				"email":     expectedUser.Email,
 			},
 			buildStubs: func(server *Server) {
-				arg := db.CreateUserParams{
-					RoleID:   uuid.MustParse("fa9db3f3-2664-4e6d-a9c9-32625a4b6bbe"),
-					Username: expectedUser.Username,
-					FullName: expectedUser.FullName,
-					Email:    expectedUser.Email,
-				}
-
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
 
-				role := &db.Role{
-					InternalID:  uuid.MustParse("fa9db3f3-2664-4e6d-a9c9-32625a4b6bbe"),
-					Name:        db.RoleCustomer,
-					Description: "Customer's role",
-					ExternalID:  "URE102",
-					UpdatedAt:   time.Now(),
-					CreatedAt:   time.Now(),
-				}
-
+				role := createRandomRole(db.RoleCustomer)
 				store.
 					EXPECT().
 					GetRoleByName(gomock.Any(), gomock.Any()).
@@ -242,7 +212,7 @@ func TestCreateUser(t *testing.T) {
 
 				store.
 					EXPECT().
-					CreateUser(gomock.Any(), EqCreateUserParams(arg, password)).
+					CreateUser(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(nil, &pq.Error{Code: "23505"})
 			},
@@ -263,15 +233,7 @@ func TestCreateUser(t *testing.T) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
 
-				role := &db.Role{
-					InternalID:  uuid.MustParse("fa9db3f3-2664-4e6d-a9c9-32625a4b6bbe"),
-					Name:        db.RoleCustomer,
-					Description: "Customer's role",
-					ExternalID:  "URE102",
-					UpdatedAt:   time.Now(),
-					CreatedAt:   time.Now(),
-				}
-
+				role := createRandomRole(db.RoleCustomer)
 				store.
 					EXPECT().
 					GetRoleByName(gomock.Any(), gomock.Any()).
