@@ -79,7 +79,7 @@ type ListUsersParams struct {
 const getAllUserQuery = `SELECT username, hashed_password, full_name, email, password_changed_at, users.created_at, role_id
 FROM users INNER JOIN role on users.role_id = role.internal_id WHERE role.name=$1 LIMIT $2 OFFSET $3;`
 
-func (q *Queries) GetAllCustomerUser(ctx context.Context, arg ListUsersParams) ([]*User, error) {
+func (q *Queries) GetAllCustomer(ctx context.Context, arg ListUsersParams) ([]*User, error) {
 	rows, err := q.db.QueryContext(ctx, getAllUserQuery, RoleCustomer, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err

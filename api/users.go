@@ -309,7 +309,7 @@ func (server *Server) getAllCustomerUser(ctx *gin.Context) {
 		Offset: request.Offset,
 	}
 
-	users, err := server.store.GetAllCustomerUser(ctx, arg)
+	users, err := server.store.GetAllCustomer(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			log.Info().Msg(ctx.Error(ErrNoRow).Error())
