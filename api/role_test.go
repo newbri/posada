@@ -22,22 +22,15 @@ import (
 
 func TestCreateRole(t *testing.T) {
 	user := createRandomUser(db.RoleAdmin)
-	expectedRole := &db.Role{
-		InternalID:  uuid.New(),
-		Name:        "visitor",
-		Description: "Visitor's Role",
-		ExternalID:  "URE101",
-		UpdatedAt:   time.Now(),
-		CreatedAt:   time.Now(),
-	}
+	expectedRole := createRandomRole(db.RoleVisitor)
 
 	testCases := []struct {
-		name         string
-		env          string
-		body         gin.H
-		mock         func(server *Server)
-		response     func(recorder *httptest.ResponseRecorder)
-		authenticate func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+		name     string
+		env      string
+		body     gin.H
+		mock     func(server *Server)
+		response func(recorder *httptest.ResponseRecorder)
+		auth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 	}{
 		{
 			name: "OK",
@@ -72,7 +65,7 @@ func TestCreateRole(t *testing.T) {
 				require.Equal(t, expectedRole.UpdatedAt.Unix(), request.UpdatedAt.Unix())
 				require.Equal(t, expectedRole.CreatedAt.Unix(), request.CreatedAt.Unix())
 			},
-			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -102,7 +95,7 @@ func TestCreateRole(t *testing.T) {
 			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
-			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -133,7 +126,7 @@ func TestCreateRole(t *testing.T) {
 			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusForbidden, recorder.Code)
 			},
-			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -164,7 +157,7 @@ func TestCreateRole(t *testing.T) {
 			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
-			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -194,7 +187,7 @@ func TestCreateRole(t *testing.T) {
 			require.NoError(t, err)
 
 			recorder := httptest.NewRecorder()
-			tc.authenticate(t, request, server.tokenMaker)
+			tc.auth(t, request, server.tokenMaker)
 			server.router.ServeHTTP(recorder, request)
 			tc.response(recorder)
 		})
@@ -205,12 +198,12 @@ func TestGetAllRole(t *testing.T) {
 	user := createRandomUser(db.RoleAdmin)
 
 	testCases := []struct {
-		name         string
-		env          string
-		body         gin.H
-		mock         func(server *Server)
-		response     func(recorder *httptest.ResponseRecorder)
-		authenticate func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+		name     string
+		env      string
+		body     gin.H
+		mock     func(server *Server)
+		response func(recorder *httptest.ResponseRecorder)
+		auth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 	}{
 		{
 			name: "OK",
@@ -224,7 +217,6 @@ func TestGetAllRole(t *testing.T) {
 				require.True(t, ok)
 
 				roles := testGetAllRole()
-
 				store.
 					EXPECT().
 					GetAllRole(gomock.Any(), gomock.Any()).
@@ -243,7 +235,6 @@ func TestGetAllRole(t *testing.T) {
 				require.NoError(t, err)
 
 				roles := testGetAllRole()
-
 				for i := range request {
 					require.Equal(t, roles[i].ExternalID, request[i].ExternalID)
 					require.Equal(t, roles[i].Name, request[i].Name)
@@ -252,7 +243,7 @@ func TestGetAllRole(t *testing.T) {
 					require.Equal(t, roles[i].CreatedAt.Unix(), request[i].UpdatedAt.Unix())
 				}
 			},
-			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -282,7 +273,7 @@ func TestGetAllRole(t *testing.T) {
 			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
-			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -313,7 +304,7 @@ func TestGetAllRole(t *testing.T) {
 			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
 			},
-			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -344,7 +335,7 @@ func TestGetAllRole(t *testing.T) {
 			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
-			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -373,7 +364,7 @@ func TestGetAllRole(t *testing.T) {
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
-			tc.authenticate(t, request, server.tokenMaker)
+			tc.auth(t, request, server.tokenMaker)
 			recorder := httptest.NewRecorder()
 			server.router.ServeHTTP(recorder, request)
 			tc.response(recorder)
@@ -385,12 +376,12 @@ func TestGetRole(t *testing.T) {
 	role := testGetAllRole()[0]
 	user := createRandomUser(db.RoleAdmin)
 	testCases := []struct {
-		name         string
-		externalID   string
-		env          string
-		mock         func(server *Server)
-		response     func(recorder *httptest.ResponseRecorder)
-		authenticate func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+		name       string
+		externalID string
+		env        string
+		mock       func(server *Server)
+		response   func(recorder *httptest.ResponseRecorder)
+		auth       func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 	}{
 		{
 			name:       "OK",
@@ -422,7 +413,7 @@ func TestGetRole(t *testing.T) {
 				require.Equal(t, role.CreatedAt.Unix(), request.CreatedAt.Unix())
 				require.Equal(t, role.CreatedAt.Unix(), request.UpdatedAt.Unix())
 			},
-			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -449,7 +440,7 @@ func TestGetRole(t *testing.T) {
 			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
-			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -477,7 +468,7 @@ func TestGetRole(t *testing.T) {
 			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
 			},
-			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -505,7 +496,7 @@ func TestGetRole(t *testing.T) {
 			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
-			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -531,7 +522,7 @@ func TestGetRole(t *testing.T) {
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
-			tc.authenticate(t, request, server.tokenMaker)
+			tc.auth(t, request, server.tokenMaker)
 			recorder := httptest.NewRecorder()
 			server.router.ServeHTTP(recorder, request)
 			tc.response(recorder)
@@ -543,12 +534,12 @@ func TestUpdateRole(t *testing.T) {
 	role := testGetAllRole()[0]
 	user := createRandomUser(db.RoleAdmin)
 	testCases := []struct {
-		name         string
-		env          string
-		body         gin.H
-		mock         func(server *Server)
-		response     func(recorder *httptest.ResponseRecorder)
-		authenticate func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+		name     string
+		env      string
+		body     gin.H
+		mock     func(server *Server)
+		response func(recorder *httptest.ResponseRecorder)
+		auth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 	}{
 		{
 			name: "NameOK",
@@ -583,7 +574,7 @@ func TestUpdateRole(t *testing.T) {
 				require.Equal(t, role.CreatedAt.Unix(), request.CreatedAt.Unix())
 				require.Equal(t, role.UpdatedAt.Unix(), request.UpdatedAt.Unix())
 			},
-			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -628,7 +619,7 @@ func TestUpdateRole(t *testing.T) {
 				require.Equal(t, role.CreatedAt.Unix(), request.CreatedAt.Unix())
 				require.Equal(t, role.CreatedAt.Unix(), request.UpdatedAt.Unix())
 			},
-			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -658,7 +649,7 @@ func TestUpdateRole(t *testing.T) {
 			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
-			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -689,7 +680,7 @@ func TestUpdateRole(t *testing.T) {
 			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
 			},
-			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -720,7 +711,7 @@ func TestUpdateRole(t *testing.T) {
 			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
-			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -749,7 +740,7 @@ func TestUpdateRole(t *testing.T) {
 			request, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
-			tc.authenticate(t, request, server.tokenMaker)
+			tc.auth(t, request, server.tokenMaker)
 			recorder := httptest.NewRecorder()
 			server.router.ServeHTTP(recorder, request)
 			tc.response(recorder)
@@ -761,12 +752,12 @@ func TestDeleteRole(t *testing.T) {
 	role := testGetAllRole()[0]
 	user := createRandomUser(db.RoleAdmin)
 	testCases := []struct {
-		name         string
-		externalID   string
-		env          string
-		mock         func(server *Server)
-		response     func(recorder *httptest.ResponseRecorder)
-		authenticate func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+		name       string
+		externalID string
+		env        string
+		mock       func(server *Server)
+		response   func(recorder *httptest.ResponseRecorder)
+		auth       func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 	}{
 		{
 			name:       "OK",
@@ -798,7 +789,7 @@ func TestDeleteRole(t *testing.T) {
 				require.Equal(t, role.CreatedAt.Unix(), request.CreatedAt.Unix())
 				require.Equal(t, role.UpdatedAt.Unix(), request.UpdatedAt.Unix())
 			},
-			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -825,7 +816,7 @@ func TestDeleteRole(t *testing.T) {
 			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
-			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -853,7 +844,7 @@ func TestDeleteRole(t *testing.T) {
 			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
 			},
-			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -881,7 +872,7 @@ func TestDeleteRole(t *testing.T) {
 			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
-			authenticate: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t,
 					request,
 					tokenMaker,
@@ -907,7 +898,7 @@ func TestDeleteRole(t *testing.T) {
 			request, err := http.NewRequest(http.MethodDelete, url, nil)
 			require.NoError(t, err)
 
-			tc.authenticate(t, request, server.tokenMaker)
+			tc.auth(t, request, server.tokenMaker)
 			recorder := httptest.NewRecorder()
 			server.router.ServeHTTP(recorder, request)
 			tc.response(recorder)
