@@ -1363,7 +1363,7 @@ func TestGetAllCustomerUser(t *testing.T) {
 				require.True(t, ok)
 
 				store.EXPECT().
-					GetAllCustomerUser(gomock.Any(), gomock.Any()).
+					GetAllCustomer(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(allCustomer, nil)
 			},
@@ -1416,7 +1416,7 @@ func TestGetAllCustomerUser(t *testing.T) {
 				require.True(t, ok)
 
 				store.EXPECT().
-					GetAllCustomerUser(gomock.Any(), gomock.Any()).
+					GetAllCustomer(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
 			response: func(recorder *httptest.ResponseRecorder) {
@@ -1445,7 +1445,7 @@ func TestGetAllCustomerUser(t *testing.T) {
 				require.True(t, ok)
 
 				store.EXPECT().
-					GetAllCustomerUser(gomock.Any(), gomock.Any()).
+					GetAllCustomer(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(nil, sql.ErrNoRows)
 			},
@@ -1475,7 +1475,7 @@ func TestGetAllCustomerUser(t *testing.T) {
 				require.True(t, ok)
 
 				store.EXPECT().
-					GetAllCustomerUser(gomock.Any(), gomock.Any()).
+					GetAllCustomer(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(nil, sql.ErrConnDone)
 			},
@@ -1505,7 +1505,7 @@ func TestGetAllCustomerUser(t *testing.T) {
 				require.True(t, ok)
 
 				store.EXPECT().
-					GetAllCustomerUser(gomock.Any(), gomock.Any()).
+					GetAllCustomer(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(nil, nil)
 			},
