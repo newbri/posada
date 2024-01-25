@@ -119,12 +119,12 @@ func (q *Queries) GetRoleByName(ctx context.Context, name string) (*Role, error)
 	return &role, err
 }
 
-const getRoleQueryByUUID = `
+const getRoleByUUIDQuery = `
 	SELECT internal_id,name,description,external_id,created_at,updated_at FROM role WHERE internal_id = $1;
 `
 
 func (q *Queries) GetRoleByUUID(ctx context.Context, internalId uuid.UUID) (*Role, error) {
-	row := q.db.QueryRowContext(ctx, getRoleQueryByUUID, internalId)
+	row := q.db.QueryRowContext(ctx, getRoleByUUIDQuery, internalId)
 	var role Role
 	err := row.Scan(
 		&role.InternalID,
