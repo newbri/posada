@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"github.com/gin-gonic/gin"
@@ -295,6 +296,16 @@ func (server *Server) getUserInfo(ctx *gin.Context) {
 }
 
 func (server *Server) getAllCustomer(ctx *gin.Context) {
+	getAllUser(ctx, server.store.GetAllCustomer)
+}
+
+func (server *Server) getAllAdmin(ctx *gin.Context) {
+	getAllUser(ctx, server.store.GetAllAdmin)
+}
+
+type getAllFunc = func(ctx context.Context, arg db.ListUsersParams) ([]*db.User, error)
+
+func getAllUser(ctx *gin.Context, fun getAllFunc) {
 	var request struct {
 		Limit  int32 `json:"limit" binding:"required,gte=1"`
 		Offset int32 `json:"offset" binding:"min=0"`
@@ -309,7 +320,7 @@ func (server *Server) getAllCustomer(ctx *gin.Context) {
 		Offset: request.Offset,
 	}
 
-	users, err := server.store.GetAllCustomer(ctx, arg)
+	users, err := fun(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			log.Info().Msg(ctx.Error(ErrNoRow).Error())
