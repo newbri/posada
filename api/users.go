@@ -294,7 +294,7 @@ func (server *Server) getUserInfo(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-func (server *Server) getAllCustomerUser(ctx *gin.Context) {
+func (server *Server) getAllCustomer(ctx *gin.Context) {
 	var request struct {
 		Limit  int32 `json:"limit" binding:"required,gte=1"`
 		Offset int32 `json:"offset" binding:"min=0"`
