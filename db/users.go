@@ -4,12 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"github.com/google/uuid"
+	"time"
 )
 
 const insertUserQuery = `
 INSERT INTO users (username, hashed_password, full_name, email, role_id) 
 VALUES ($1,$2,$3,$4,$5)
-RETURNING username,hashed_password,full_name,email,password_changed_at,created_at,role_id
+RETURNING username, hashed_password, full_name, email, password_changed_at, created_at, role_id, is_deleted, deleted_at;
 `
 
 type CreateUserParams struct {
@@ -38,6 +39,8 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (*User, 
 		&user.PasswordChangedAt,
 		&user.CreatedAt,
 		&role.InternalID,
+		&user.IsDeleted,
+		&user.DeletedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -47,12 +50,12 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (*User, 
 }
 
 const getUserQuery = `
-SELECT username, hashed_password, full_name, email, password_changed_at, created_at, role_id 
-FROM users WHERE username = $1;
+SELECT username, hashed_password, full_name, email, password_changed_at, created_at, role_id, is_deleted, deleted_at 
+FROM users WHERE username = $1 AND is_deleted = $2;
 `
 
 func (q *Queries) GetUser(ctx context.Context, username string) (*User, error) {
-	row := q.db.QueryRowContext(ctx, getUserQuery, username)
+	row := q.db.QueryRowContext(ctx, getUserQuery, username, false)
 	var user User
 	var role Role
 	err := row.Scan(
@@ -63,6 +66,8 @@ func (q *Queries) GetUser(ctx context.Context, username string) (*User, error) {
 		&user.PasswordChangedAt,
 		&user.CreatedAt,
 		&role.InternalID,
+		&user.IsDeleted,
+		&user.DeletedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -76,15 +81,15 @@ type ListUsersParams struct {
 	Offset int32 `json:"offset"`
 }
 
-const getAllUserQuery = `SELECT username, hashed_password, full_name, email, password_changed_at, users.created_at, role_id
-FROM users INNER JOIN role on users.role_id = role.internal_id WHERE role.name=$1 LIMIT $2 OFFSET $3;`
+const getAllUserQuery = `SELECT username, hashed_password, full_name, email, password_changed_at, users.created_at, role_id, is_deleted, deleted_at
+FROM users INNER JOIN role on users.role_id = role.internal_id WHERE role.name = $1 AND is_deleted = $2 LIMIT $3 OFFSET $4;`
 
 func (q *Queries) GetAllCustomer(ctx context.Context, arg ListUsersParams) ([]*User, error) {
-	return q.getUsersByRole(ctx, getAllUserQuery, RoleCustomer, arg)
+	return q.getUsersByRole(ctx, getAllUserQuery, RoleCustomer, false, arg)
 }
 
 func (q *Queries) GetAllAdmin(ctx context.Context, arg ListUsersParams) ([]*User, error) {
-	return q.getUsersByRole(ctx, getAllUserQuery, RoleAdmin, arg)
+	return q.getUsersByRole(ctx, getAllUserQuery, RoleAdmin, false, arg)
 }
 
 type UpdateUserParams struct {
@@ -101,8 +106,8 @@ SET hashed_password = coalesce($1, hashed_password),
     password_changed_at = coalesce($2, password_changed_at),
     full_name = coalesce($3, full_name),
     email = coalesce($4, email)
-WHERE username = $5
-RETURNING username, hashed_password, full_name, email, password_changed_at, created_at, role_id;
+WHERE username = $5 AND is_deleted = $6
+RETURNING username, hashed_password, full_name, email, password_changed_at, created_at, role_id, is_deleted, deleted_at;
 `
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (*User, error) {
@@ -112,6 +117,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (*User, 
 		arg.FullName,
 		arg.Email,
 		arg.Username,
+		false,
 	)
 	var user User
 	var role Role
@@ -123,6 +129,8 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (*User, 
 		&user.PasswordChangedAt,
 		&user.CreatedAt,
 		&role.InternalID,
+		&user.IsDeleted,
+		&user.DeletedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -131,11 +139,11 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (*User, 
 	return &user, err
 }
 
-const deleteUserQuery = `DELETE FROM users WHERE username = $1 
-     RETURNING username, hashed_password, full_name, email, password_changed_at, created_at, role_id;`
+const deleteUserQuery = `UPDATE users SET is_deleted = $1, deleted_at = $2 WHERE username = $3 AND is_deleted = $4
+     RETURNING username, hashed_password, full_name, email, password_changed_at, created_at, role_id, is_deleted, deleted_at;`
 
 func (q *Queries) DeleteUser(ctx context.Context, username string) (*User, error) {
-	row := q.db.QueryRowContext(ctx, deleteUserQuery, username)
+	row := q.db.QueryRowContext(ctx, deleteUserQuery, true, time.Now(), username, false)
 	var user User
 	var role Role
 	err := row.Scan(
@@ -146,6 +154,8 @@ func (q *Queries) DeleteUser(ctx context.Context, username string) (*User, error
 		&user.PasswordChangedAt,
 		&user.CreatedAt,
 		&role.InternalID,
+		&user.IsDeleted,
+		&user.DeletedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -154,8 +164,8 @@ func (q *Queries) DeleteUser(ctx context.Context, username string) (*User, error
 	return &user, err
 }
 
-func (q *Queries) getUsersByRole(ctx context.Context, query string, role string, arg ListUsersParams) ([]*User, error) {
-	rows, err := q.db.QueryContext(ctx, query, role, arg.Limit, arg.Offset)
+func (q *Queries) getUsersByRole(ctx context.Context, query string, role string, isDeleted bool, arg ListUsersParams) ([]*User, error) {
+	rows, err := q.db.QueryContext(ctx, query, role, isDeleted, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -175,6 +185,8 @@ func (q *Queries) getUsersByRole(ctx context.Context, query string, role string,
 			&user.PasswordChangedAt,
 			&user.CreatedAt,
 			&role.InternalID,
+			&user.IsDeleted,
+			&user.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
