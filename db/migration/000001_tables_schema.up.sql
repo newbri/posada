@@ -7,7 +7,8 @@ CREATE TABLE "users"
     "role_id"             uuid        NOT NULL,
     "is_deleted"          boolean     NOT NULL DEFAULT false,
     "password_changed_at" timestamptz NOT NULL DEFAULT (now()),
-    "created_at"          timestamptz NOT NULL DEFAULT (now())
+    "created_at"          timestamptz NOT NULL DEFAULT (now()),
+    "deleted_at"          timestamptz NOT NULL DEFAULT ('0001-01-01')
 );
 
 CREATE TABLE "sessions"
