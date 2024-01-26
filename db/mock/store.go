@@ -41,6 +41,21 @@ func (m *MockStore) EXPECT() *MockStoreMockRecorder {
 	return m.recorder
 }
 
+// BlockSession mocks base method.
+func (m *MockStore) BlockSession(arg0 context.Context, arg1 uuid.UUID) (*db.Session, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BlockSession", arg0, arg1)
+	ret0, _ := ret[0].(*db.Session)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// BlockSession indicates an expected call of BlockSession.
+func (mr *MockStoreMockRecorder) BlockSession(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BlockSession", reflect.TypeOf((*MockStore)(nil).BlockSession), arg0, arg1)
+}
+
 // CreateRole mocks base method.
 func (m *MockStore) CreateRole(arg0 context.Context, arg1 db.CreateRoleParams) (*db.Role, error) {
 	m.ctrl.T.Helper()
