@@ -16,7 +16,7 @@ INSERT INTO sessions (id,
                       expired_at,
                       created_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-RETURNING id, username, refresh_token, user_agent, client_ip, is_blocked, expired_at, created_at
+RETURNING id, username, refresh_token, user_agent, client_ip, is_blocked, expired_at, created_at, blocked_at
 `
 
 type CreateSessionParams struct {
@@ -51,12 +51,13 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (*
 		&session.IsBlocked,
 		&session.ExpiredAt,
 		&session.CreatedAt,
+		&session.BlockedAt,
 	)
 	return &session, err
 }
 
 const getSessionQuery = `-- name: GetSession :one
-SELECT id, username, refresh_token, user_agent, client_ip, is_blocked, expired_at, created_at
+SELECT id, username, refresh_token, user_agent, client_ip, is_blocked, expired_at, created_at, blocked_at
 FROM sessions
 WHERE id = $1
 LIMIT 1
@@ -74,6 +75,17 @@ func (q *Queries) GetSession(ctx context.Context, id uuid.UUID) (*Session, error
 		&session.IsBlocked,
 		&session.ExpiredAt,
 		&session.CreatedAt,
+		&session.BlockedAt,
 	)
 	return &session, err
+}
+
+const blockSessionQuery = `UPDATE sessions SET is_blocked = $1, blocked_at = $2 WHERE id = $3;`
+
+func (q *Queries) BlockSession(ctx context.Context, sessionID uuid.UUID) (*Session, error) {
+	_, err := q.db.ExecContext(ctx, blockSessionQuery, true, time.Now(), sessionID)
+	if err != nil {
+		return nil, err
+	}
+	return q.GetSession(ctx, sessionID)
 }
