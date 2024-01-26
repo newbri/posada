@@ -33,7 +33,7 @@ func (server *Server) setupRouter() {
 
 	authGroup := apiGroup.Group("/auth")
 
-	authGroup.Use(authMiddleware(server.tokenMaker))
+	authGroup.Use(authMiddleware(server))
 	authGroup.GET("/users/info", server.getUserInfo)
 	authGroup.PUT("/users", server.updateUser)
 
