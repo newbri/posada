@@ -24,6 +24,7 @@ type Session struct {
 	IsBlocked    bool      `json:"is_blocked"`
 	ExpiredAt    time.Time `json:"expired_at"`
 	CreatedAt    time.Time `json:"created_at"`
+	BlockedAt    time.Time `json:"blocked_at"`
 }
 
 type Role struct {
