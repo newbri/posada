@@ -5,6 +5,7 @@ CREATE TABLE "users"
     "full_name"           text        NOT NULL,
     "email"               text UNIQUE NOT NULL,
     "role_id"             uuid        NOT NULL,
+    "is_deleted"          boolean     NOT NULL DEFAULT false,
     "password_changed_at" timestamptz NOT NULL DEFAULT (now()),
     "created_at"          timestamptz NOT NULL DEFAULT (now())
 );
@@ -57,7 +58,8 @@ CREATE TABLE IF NOT EXISTS "property_user"
 
 ALTER TABLE IF EXISTS "sessions"
     ADD CONSTRAINT "fk_sessions_username"
-        FOREIGN KEY ("username") REFERENCES "users" ("username");
+        FOREIGN KEY ("username") REFERENCES "users" ("username")
+            ON DELETE CASCADE;
 
 CREATE UNIQUE INDEX IF NOT EXISTS "role_external_id_index" ON "role" ("external_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "role_name" ON "role" ("name");
