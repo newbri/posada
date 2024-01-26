@@ -20,7 +20,7 @@ import (
 )
 
 func TestCreateRole(t *testing.T) {
-	user := createRandomUser(db.RoleAdmin)
+	adminUser := createRandomUser(db.RoleAdmin)
 	expectedRole := createRandomRole(db.RoleVisitor)
 
 	testCases := []struct {
@@ -41,6 +41,12 @@ func TestCreateRole(t *testing.T) {
 			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
+
+				store.
+					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(adminUser, nil)
 
 				store.
 					EXPECT().
@@ -69,8 +75,8 @@ func TestCreateRole(t *testing.T) {
 					request,
 					tokenMaker,
 					authorizationTypeBearer,
-					user.Username,
-					user.Role,
+					adminUser.Username,
+					adminUser.Role,
 					time.Minute,
 				)
 			},
@@ -88,6 +94,12 @@ func TestCreateRole(t *testing.T) {
 
 				store.
 					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(adminUser, nil)
+
+				store.
+					EXPECT().
 					CreateRole(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
@@ -99,8 +111,8 @@ func TestCreateRole(t *testing.T) {
 					request,
 					tokenMaker,
 					authorizationTypeBearer,
-					user.Username,
-					user.Role,
+					adminUser.Username,
+					adminUser.Role,
 					time.Minute,
 				)
 			},
@@ -118,6 +130,12 @@ func TestCreateRole(t *testing.T) {
 
 				store.
 					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(adminUser, nil)
+
+				store.
+					EXPECT().
 					CreateRole(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(nil, &pq.Error{Code: "23505"})
@@ -130,8 +148,8 @@ func TestCreateRole(t *testing.T) {
 					request,
 					tokenMaker,
 					authorizationTypeBearer,
-					user.Username,
-					user.Role,
+					adminUser.Username,
+					adminUser.Role,
 					time.Minute,
 				)
 			},
@@ -149,6 +167,12 @@ func TestCreateRole(t *testing.T) {
 
 				store.
 					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(adminUser, nil)
+
+				store.
+					EXPECT().
 					CreateRole(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(nil, sql.ErrConnDone)
@@ -161,8 +185,8 @@ func TestCreateRole(t *testing.T) {
 					request,
 					tokenMaker,
 					authorizationTypeBearer,
-					user.Username,
-					user.Role,
+					adminUser.Username,
+					adminUser.Role,
 					time.Minute,
 				)
 			},
@@ -195,7 +219,7 @@ func TestCreateRole(t *testing.T) {
 
 func TestGetAllRole(t *testing.T) {
 	roles := testGetAllRole()
-	user := createRandomUser(db.RoleAdmin)
+	adminUser := createRandomUser(db.RoleAdmin)
 
 	testCases := []struct {
 		name     string
@@ -215,6 +239,12 @@ func TestGetAllRole(t *testing.T) {
 			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
+
+				store.
+					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(adminUser, nil)
 
 				store.
 					EXPECT().
@@ -246,8 +276,8 @@ func TestGetAllRole(t *testing.T) {
 					request,
 					tokenMaker,
 					authorizationTypeBearer,
-					user.Username,
-					user.Role,
+					adminUser.Username,
+					adminUser.Role,
 					time.Minute,
 				)
 			},
@@ -265,6 +295,12 @@ func TestGetAllRole(t *testing.T) {
 
 				store.
 					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(adminUser, nil)
+
+				store.
+					EXPECT().
 					GetAllRole(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
@@ -276,8 +312,8 @@ func TestGetAllRole(t *testing.T) {
 					request,
 					tokenMaker,
 					authorizationTypeBearer,
-					user.Username,
-					user.Role,
+					adminUser.Username,
+					adminUser.Role,
 					time.Minute,
 				)
 			},
@@ -295,6 +331,12 @@ func TestGetAllRole(t *testing.T) {
 
 				store.
 					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(adminUser, nil)
+
+				store.
+					EXPECT().
 					GetAllRole(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(nil, sql.ErrNoRows)
@@ -307,8 +349,8 @@ func TestGetAllRole(t *testing.T) {
 					request,
 					tokenMaker,
 					authorizationTypeBearer,
-					user.Username,
-					user.Role,
+					adminUser.Username,
+					adminUser.Role,
 					time.Minute,
 				)
 			},
@@ -326,6 +368,12 @@ func TestGetAllRole(t *testing.T) {
 
 				store.
 					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(adminUser, nil)
+
+				store.
+					EXPECT().
 					GetAllRole(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(nil, sql.ErrConnDone)
@@ -338,8 +386,8 @@ func TestGetAllRole(t *testing.T) {
 					request,
 					tokenMaker,
 					authorizationTypeBearer,
-					user.Username,
-					user.Role,
+					adminUser.Username,
+					adminUser.Role,
 					time.Minute,
 				)
 			},
@@ -372,7 +420,7 @@ func TestGetAllRole(t *testing.T) {
 
 func TestGetRole(t *testing.T) {
 	role := testGetAllRole()[0]
-	user := createRandomUser(db.RoleAdmin)
+	adminUser := createRandomUser(db.RoleAdmin)
 	testCases := []struct {
 		name       string
 		externalID string
@@ -388,6 +436,12 @@ func TestGetRole(t *testing.T) {
 			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
+
+				store.
+					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(adminUser, nil)
 
 				store.
 					EXPECT().
@@ -416,8 +470,8 @@ func TestGetRole(t *testing.T) {
 					request,
 					tokenMaker,
 					authorizationTypeBearer,
-					user.Username,
-					user.Role,
+					adminUser.Username,
+					adminUser.Role,
 					time.Minute,
 				)
 			},
@@ -432,6 +486,12 @@ func TestGetRole(t *testing.T) {
 
 				store.
 					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(adminUser, nil)
+
+				store.
+					EXPECT().
 					GetRole(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
@@ -443,8 +503,8 @@ func TestGetRole(t *testing.T) {
 					request,
 					tokenMaker,
 					authorizationTypeBearer,
-					user.Username,
-					user.Role,
+					adminUser.Username,
+					adminUser.Role,
 					time.Minute,
 				)
 			},
@@ -456,6 +516,12 @@ func TestGetRole(t *testing.T) {
 			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
+
+				store.
+					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(adminUser, nil)
 
 				store.
 					EXPECT().
@@ -471,8 +537,8 @@ func TestGetRole(t *testing.T) {
 					request,
 					tokenMaker,
 					authorizationTypeBearer,
-					user.Username,
-					user.Role,
+					adminUser.Username,
+					adminUser.Role,
 					time.Minute,
 				)
 			},
@@ -484,6 +550,12 @@ func TestGetRole(t *testing.T) {
 			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
+
+				store.
+					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(adminUser, nil)
 
 				store.
 					EXPECT().
@@ -499,8 +571,8 @@ func TestGetRole(t *testing.T) {
 					request,
 					tokenMaker,
 					authorizationTypeBearer,
-					user.Username,
-					user.Role,
+					adminUser.Username,
+					adminUser.Role,
 					time.Minute,
 				)
 			},
@@ -530,7 +602,7 @@ func TestGetRole(t *testing.T) {
 
 func TestUpdateRole(t *testing.T) {
 	role := testGetAllRole()[0]
-	user := createRandomUser(db.RoleAdmin)
+	adminUser := createRandomUser(db.RoleAdmin)
 	testCases := []struct {
 		name     string
 		env      string
@@ -549,6 +621,12 @@ func TestUpdateRole(t *testing.T) {
 			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
+
+				store.
+					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(adminUser, nil)
 
 				store.
 					EXPECT().
@@ -577,8 +655,8 @@ func TestUpdateRole(t *testing.T) {
 					request,
 					tokenMaker,
 					authorizationTypeBearer,
-					user.Username,
-					user.Role,
+					adminUser.Username,
+					adminUser.Role,
 					time.Minute,
 				)
 			},
@@ -593,6 +671,12 @@ func TestUpdateRole(t *testing.T) {
 			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
+
+				store.
+					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(adminUser, nil)
 
 				store.
 					EXPECT().
@@ -621,8 +705,8 @@ func TestUpdateRole(t *testing.T) {
 					request,
 					tokenMaker,
 					authorizationTypeBearer,
-					user.Username,
-					user.Role,
+					adminUser.Username,
+					adminUser.Role,
 					time.Minute,
 				)
 			},
@@ -640,6 +724,12 @@ func TestUpdateRole(t *testing.T) {
 
 				store.
 					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(adminUser, nil)
+
+				store.
+					EXPECT().
 					UpdateRole(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
@@ -651,8 +741,8 @@ func TestUpdateRole(t *testing.T) {
 					request,
 					tokenMaker,
 					authorizationTypeBearer,
-					user.Username,
-					user.Role,
+					adminUser.Username,
+					adminUser.Role,
 					time.Minute,
 				)
 			},
@@ -670,6 +760,12 @@ func TestUpdateRole(t *testing.T) {
 
 				store.
 					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(adminUser, nil)
+
+				store.
+					EXPECT().
 					UpdateRole(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(nil, sql.ErrNoRows)
@@ -682,8 +778,8 @@ func TestUpdateRole(t *testing.T) {
 					request,
 					tokenMaker,
 					authorizationTypeBearer,
-					user.Username,
-					user.Role,
+					adminUser.Username,
+					adminUser.Role,
 					time.Minute,
 				)
 			},
@@ -701,6 +797,12 @@ func TestUpdateRole(t *testing.T) {
 
 				store.
 					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(adminUser, nil)
+
+				store.
+					EXPECT().
 					UpdateRole(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(nil, sql.ErrConnDone)
@@ -713,8 +815,8 @@ func TestUpdateRole(t *testing.T) {
 					request,
 					tokenMaker,
 					authorizationTypeBearer,
-					user.Username,
-					user.Role,
+					adminUser.Username,
+					adminUser.Role,
 					time.Minute,
 				)
 			},
@@ -747,7 +849,7 @@ func TestUpdateRole(t *testing.T) {
 
 func TestDeleteRole(t *testing.T) {
 	role := testGetAllRole()[0]
-	user := createRandomUser(db.RoleAdmin)
+	adminUser := createRandomUser(db.RoleAdmin)
 	testCases := []struct {
 		name       string
 		externalID string
@@ -763,6 +865,12 @@ func TestDeleteRole(t *testing.T) {
 			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
+
+				store.
+					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(adminUser, nil)
 
 				store.
 					EXPECT().
@@ -791,8 +899,8 @@ func TestDeleteRole(t *testing.T) {
 					request,
 					tokenMaker,
 					authorizationTypeBearer,
-					user.Username,
-					user.Role,
+					adminUser.Username,
+					adminUser.Role,
 					time.Minute,
 				)
 			},
@@ -807,6 +915,12 @@ func TestDeleteRole(t *testing.T) {
 
 				store.
 					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(adminUser, nil)
+
+				store.
+					EXPECT().
 					DeleteRole(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
@@ -818,8 +932,8 @@ func TestDeleteRole(t *testing.T) {
 					request,
 					tokenMaker,
 					authorizationTypeBearer,
-					user.Username,
-					user.Role,
+					adminUser.Username,
+					adminUser.Role,
 					time.Minute,
 				)
 			},
@@ -831,6 +945,12 @@ func TestDeleteRole(t *testing.T) {
 			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
+
+				store.
+					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(adminUser, nil)
 
 				store.
 					EXPECT().
@@ -846,8 +966,8 @@ func TestDeleteRole(t *testing.T) {
 					request,
 					tokenMaker,
 					authorizationTypeBearer,
-					user.Username,
-					user.Role,
+					adminUser.Username,
+					adminUser.Role,
 					time.Minute,
 				)
 			},
@@ -859,6 +979,12 @@ func TestDeleteRole(t *testing.T) {
 			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
 				require.True(t, ok)
+
+				store.
+					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(adminUser, nil)
 
 				store.
 					EXPECT().
@@ -874,8 +1000,8 @@ func TestDeleteRole(t *testing.T) {
 					request,
 					tokenMaker,
 					authorizationTypeBearer,
-					user.Username,
-					user.Role,
+					adminUser.Username,
+					adminUser.Role,
 					time.Minute,
 				)
 			},
