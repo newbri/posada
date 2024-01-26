@@ -18,7 +18,8 @@ CREATE TABLE "sessions"
     "client_ip"     text        NOT NULL,
     "is_blocked"    boolean     NOT NULL DEFAULT false,
     "expired_at"    timestamptz NOT NULL,
-    "created_at"    timestamptz NOT NULL DEFAULT (now())
+    "created_at"    timestamptz NOT NULL DEFAULT (now()),
+    "blocked_at"    timestamptz NOT NULL DEFAULT ('0001-01-01')
 );
 
 CREATE TABLE IF NOT EXISTS "role"
