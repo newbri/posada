@@ -47,7 +47,16 @@ func authMiddleware(server *Server) gin.HandlerFunc {
 			return
 		}
 
-		// TODO: Verify that the user exists
+		user, err := server.store.GetUser(ctx, payload.Username)
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
+			return
+		}
+
+		if user.IsDeleted {
+			ctx.AbortWithStatusJSON(http.StatusForbidden, errorResponse(errors.New("token is invalid. User does not exists")))
+			return
+		}
 
 		ctx.Set(authorizationPayloadKey, payload)
 		ctx.Next()
