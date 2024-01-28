@@ -1028,11 +1028,3 @@ func TestDeleteRole(t *testing.T) {
 		})
 	}
 }
-
-func testGetAllRole() []*db.Role {
-	var roles []*db.Role
-	roles = append(roles, createRandomRole(db.RoleAdmin))
-	roles = append(roles, createRandomRole(db.RoleVisitor))
-	roles = append(roles, createRandomRole(db.RoleCustomer))
-	return roles
-}

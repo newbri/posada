@@ -109,3 +109,11 @@ func addAuthorization(t *testing.T, request *http.Request, tokenMaker token.Make
 	authorizationHeader := fmt.Sprintf("%s %s", authorizationType, userToken)
 	request.Header.Set(authorizationHeaderKey, authorizationHeader)
 }
+
+func testGetAllRole() []*db.Role {
+	var roles []*db.Role
+	roles = append(roles, createRandomRole(db.RoleAdmin))
+	roles = append(roles, createRandomRole(db.RoleVisitor))
+	roles = append(roles, createRandomRole(db.RoleCustomer))
+	return roles
+}
