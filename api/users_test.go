@@ -1694,6 +1694,107 @@ func TestGetAllCustomer(t *testing.T) {
 	}
 }
 
+func TestGetAllAdmin(t *testing.T) {
+	superUser := createRandomUser(db.RoleSuperUser)
+	var allAdmin []*db.User
+	for i := 0; i < 6; i++ {
+		allAdmin = append(allAdmin, createRandomUser(db.RoleAdmin))
+	}
+
+	testCases := []struct {
+		name     string
+		env      string
+		body     gin.H
+		mock     func(server *Server)
+		response func(recorder *httptest.ResponseRecorder)
+		auth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+	}{
+		{
+			name: "OK",
+			env:  "test",
+			body: gin.H{
+				"offset": 0,
+				"limit":  6,
+			},
+			mock: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				store.
+					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(superUser, nil)
+
+				store.EXPECT().
+					GetAllAdmin(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(allAdmin, nil)
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+
+				data, err := io.ReadAll(recorder.Body)
+				require.NoError(t, err)
+
+				var request []*userResponse
+				err = json.Unmarshal(data, &request)
+				require.NoError(t, err)
+
+				for i, user := range allAdmin {
+					expectedUser := &userResponse{
+						Username:          user.Username,
+						FullName:          user.FullName,
+						Email:             user.Email,
+						PasswordChangedAt: user.PasswordChangedAt,
+						CreatedAt:         user.CreatedAt,
+						Role:              user.Role,
+					}
+					require.Equal(t, expectedUser.Username, request[i].Username)
+					require.Equal(t, expectedUser.FullName, request[i].FullName)
+					require.Equal(t, expectedUser.Email, request[i].Email)
+					require.Equal(t, expectedUser.PasswordChangedAt.Unix(), request[i].PasswordChangedAt.Unix())
+					require.Equal(t, expectedUser.CreatedAt.Unix(), request[i].CreatedAt.Unix())
+				}
+			},
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					superUser.Username,
+					superUser.Role,
+					time.Minute,
+				)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			store := mockdb.NewMockStore(ctrl)
+			server := newTestServer(store)
+			tc.mock(server)
+
+			// Marshal body data to JSON
+			data, err := json.Marshal(tc.body)
+			require.NoError(t, err)
+
+			url := "/api/auth/su/users/all/admin"
+			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
+			require.NoError(t, err)
+
+			tc.auth(t, request, server.tokenMaker)
+			recorder := httptest.NewRecorder()
+			server.router.ServeHTTP(recorder, request)
+			tc.response(recorder)
+		})
+	}
+}
+
 func createRandomUser(role string) *db.User {
 	hashedPassword, err := util.HashPassword(util.RandomString(6))
 	if err != nil {
