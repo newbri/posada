@@ -110,10 +110,24 @@ func addAuthorization(t *testing.T, request *http.Request, tokenMaker token.Make
 	request.Header.Set(authorizationHeaderKey, authorizationHeader)
 }
 
-func testGetAllRole() []*db.Role {
+func getAllRole() []*db.Role {
 	var roles []*db.Role
 	roles = append(roles, createRandomRole(db.RoleAdmin))
 	roles = append(roles, createRandomRole(db.RoleVisitor))
 	roles = append(roles, createRandomRole(db.RoleCustomer))
 	return roles
+}
+
+func createSession(user *db.User, refreshToken string) *db.Session {
+	t := time.Now()
+	return &db.Session{
+		ID:           uuid.New(),
+		Username:     user.Username,
+		RefreshToken: refreshToken,
+		UserAgent:    "PostmanRuntime/7.36.0",
+		ClientIp:     "::1",
+		IsBlocked:    false,
+		ExpiredAt:    t.Add(time.Hour),
+		CreatedAt:    t,
+	}
 }
