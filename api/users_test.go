@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"github.com/newbri/posadamissportia/db"
 	mockdb "github.com/newbri/posadamissportia/db/mock"
@@ -1022,16 +1021,7 @@ func TestLoginUser(t *testing.T) {
 					Return(refreshToken, refreshPayload, nil).
 					AnyTimes()
 
-				session := &db.Session{
-					ID:           uuid.New(),
-					Username:     expectedUser.Username,
-					RefreshToken: refreshToken,
-					UserAgent:    "PostmanRuntime/7.36.0",
-					ClientIp:     "::1",
-					IsBlocked:    false,
-					ExpiredAt:    time.Now().Add(time.Hour),
-					CreatedAt:    time.Now(),
-				}
+				session := createSession(expectedUser, refreshToken)
 
 				store.
 					EXPECT().
