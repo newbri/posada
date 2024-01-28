@@ -1,13 +1,16 @@
 package api
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/newbri/posadamissportia/db"
 	"github.com/newbri/posadamissportia/db/util"
 	"github.com/newbri/posadamissportia/token"
 	"github.com/rs/zerolog/log"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestMain(m *testing.M) {
@@ -35,4 +38,63 @@ func newServer(store db.Store, maker token.Maker, env string) *Server {
 	}
 
 	return NewServer(store, maker, config)
+}
+
+func createRandomUser(role string) *db.User {
+	hashedPassword, err := util.HashPassword(util.RandomString(6))
+	if err != nil {
+		return nil
+	}
+
+	t := time.Now()
+	return &db.User{
+		Username:          util.RandomOwner(),
+		HashedPassword:    hashedPassword,
+		FullName:          fmt.Sprintf("%s %s", util.RandomOwner(), util.RandomOwner()),
+		Email:             util.RandomEmail(),
+		PasswordChangedAt: t,
+		CreatedAt:         t,
+		Role:              createRandomRole(role),
+		IsDeleted:         false,
+		DeletedAt:         time.Time{},
+	}
+}
+
+func createRandomRole(roleType string) *db.Role {
+	t := time.Now()
+	return &db.Role{
+		InternalID:  uuid.New(),
+		Name:        roleType,
+		Description: util.RandomString(16),
+		ExternalID:  fmt.Sprintf("URE%d", util.RandomInt(101, 999)),
+		UpdatedAt:   t,
+		CreatedAt:   t,
+	}
+}
+
+func createRandomUserAndPassword() (*db.User, string) {
+	password := util.RandomString(6)
+	hashedPassword, err := util.HashPassword(password)
+	if err != nil {
+		return nil, ""
+	}
+
+	t := time.Now()
+	return &db.User{
+		Username:          util.RandomOwner(),
+		HashedPassword:    hashedPassword,
+		FullName:          fmt.Sprintf("%s %s", util.RandomOwner(), util.RandomOwner()),
+		Email:             util.RandomEmail(),
+		PasswordChangedAt: t,
+		CreatedAt:         t,
+		Role:              createRandomRole(db.RoleAdmin),
+	}, password
+}
+
+func createToken(symmetricKey string, username string, role *db.Role, duration time.Duration) (string, *token.Payload, error) {
+	tokenMaker, err := token.NewPasetoMaker(symmetricKey)
+	if err != nil {
+		return "", nil, err
+	}
+	return tokenMaker.CreateToken(username, role, duration)
 }
