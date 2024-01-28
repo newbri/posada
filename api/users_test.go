@@ -1450,7 +1450,7 @@ func TestUserInfo(t *testing.T) {
 	}
 }
 
-func TestGetAllCustomerUser(t *testing.T) {
+func TestGetAllCustomer(t *testing.T) {
 	adminUser := createRandomUser(db.RoleAdmin)
 	var allCustomer []*db.User
 	for i := 0; i < 6; i++ {
