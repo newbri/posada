@@ -218,7 +218,7 @@ func TestCreateRole(t *testing.T) {
 }
 
 func TestGetAllRole(t *testing.T) {
-	roles := testGetAllRole()
+	roles := getAllRole()
 	adminUser := createRandomUser(db.RoleAdmin)
 
 	testCases := []struct {
@@ -419,7 +419,7 @@ func TestGetAllRole(t *testing.T) {
 }
 
 func TestGetRole(t *testing.T) {
-	role := testGetAllRole()[0]
+	role := getAllRole()[0]
 	adminUser := createRandomUser(db.RoleAdmin)
 	testCases := []struct {
 		name       string
@@ -601,7 +601,7 @@ func TestGetRole(t *testing.T) {
 }
 
 func TestUpdateRole(t *testing.T) {
-	role := testGetAllRole()[0]
+	role := getAllRole()[0]
 	adminUser := createRandomUser(db.RoleAdmin)
 	testCases := []struct {
 		name     string
@@ -848,7 +848,7 @@ func TestUpdateRole(t *testing.T) {
 }
 
 func TestDeleteRole(t *testing.T) {
-	role := testGetAllRole()[0]
+	role := getAllRole()[0]
 	adminUser := createRandomUser(db.RoleAdmin)
 	testCases := []struct {
 		name       string
