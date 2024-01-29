@@ -20,7 +20,7 @@ import (
 )
 
 func TestCreateRole(t *testing.T) {
-	adminUser := createRandomUser(db.RoleAdmin)
+	adminUser := createRandomUser(db.RoleAdmin, false)
 	expectedRole := createRandomRole(db.RoleVisitor)
 
 	testCases := []struct {
@@ -219,7 +219,7 @@ func TestCreateRole(t *testing.T) {
 
 func TestGetAllRole(t *testing.T) {
 	roles := getAllRole()
-	adminUser := createRandomUser(db.RoleAdmin)
+	adminUser := createRandomUser(db.RoleAdmin, false)
 
 	testCases := []struct {
 		name     string
@@ -420,7 +420,7 @@ func TestGetAllRole(t *testing.T) {
 
 func TestGetRole(t *testing.T) {
 	role := getAllRole()[0]
-	adminUser := createRandomUser(db.RoleAdmin)
+	adminUser := createRandomUser(db.RoleAdmin, false)
 	testCases := []struct {
 		name       string
 		externalID string
@@ -602,7 +602,7 @@ func TestGetRole(t *testing.T) {
 
 func TestUpdateRole(t *testing.T) {
 	role := getAllRole()[0]
-	adminUser := createRandomUser(db.RoleAdmin)
+	adminUser := createRandomUser(db.RoleAdmin, false)
 	testCases := []struct {
 		name     string
 		env      string
@@ -849,7 +849,7 @@ func TestUpdateRole(t *testing.T) {
 
 func TestDeleteRole(t *testing.T) {
 	role := getAllRole()[0]
-	adminUser := createRandomUser(db.RoleAdmin)
+	adminUser := createRandomUser(db.RoleAdmin, false)
 	testCases := []struct {
 		name       string
 		externalID string
