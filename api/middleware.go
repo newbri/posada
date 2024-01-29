@@ -54,7 +54,7 @@ func authMiddleware(server *Server) gin.HandlerFunc {
 		}
 
 		if user.IsDeleted {
-			ctx.AbortWithStatusJSON(http.StatusForbidden, errorResponse(errors.New("token is invalid. User does not exists")))
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(errors.New("token is invalid. User does not exists")))
 			return
 		}
 
