@@ -81,7 +81,7 @@ func EqUpdateUserParams(arg db.UpdateUserParams, password string) gomock.Matcher
 func TestCreateUser(t *testing.T) {
 	password := "lexy84"
 	longPassword := util.RandomString(73)
-	expectedUser := createRandomUser(db.RoleAdmin)
+	expectedUser := createRandomUser(db.RoleAdmin, false)
 
 	testCases := []struct {
 		name     string
@@ -298,7 +298,7 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestGetUser(t *testing.T) {
-	adminUser := createRandomUser(db.RoleAdmin)
+	adminUser := createRandomUser(db.RoleAdmin, false)
 
 	testCases := []struct {
 		name     string
@@ -473,7 +473,7 @@ func TestGetUser(t *testing.T) {
 func TestUpdateUser(t *testing.T) {
 	password := "lexy84"
 	longPassword := util.RandomString(73)
-	adminUser := createRandomUser(db.RoleAdmin)
+	adminUser := createRandomUser(db.RoleAdmin, false)
 
 	testCases := []struct {
 		name     string
@@ -790,7 +790,7 @@ func TestUpdateUser(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
-	adminUser := createRandomUser(db.RoleAdmin)
+	adminUser := createRandomUser(db.RoleAdmin, false)
 
 	testCases := []struct {
 		name     string
@@ -1299,7 +1299,7 @@ func TestLoginUser(t *testing.T) {
 }
 
 func TestUserInfo(t *testing.T) {
-	adminUser := createRandomUser(db.RoleAdmin)
+	adminUser := createRandomUser(db.RoleAdmin, false)
 
 	testCases := []struct {
 		name     string
@@ -1441,10 +1441,10 @@ func TestUserInfo(t *testing.T) {
 }
 
 func TestGetAllCustomer(t *testing.T) {
-	adminUser := createRandomUser(db.RoleAdmin)
+	adminUser := createRandomUser(db.RoleAdmin, false)
 	var allCustomer []*db.User
 	for i := 0; i < 6; i++ {
-		allCustomer = append(allCustomer, createRandomUser(db.RoleCustomer))
+		allCustomer = append(allCustomer, createRandomUser(db.RoleCustomer, false))
 	}
 
 	testCases := []struct {
@@ -1685,10 +1685,10 @@ func TestGetAllCustomer(t *testing.T) {
 }
 
 func TestGetAllAdmin(t *testing.T) {
-	superUser := createRandomUser(db.RoleSuperUser)
+	superUser := createRandomUser(db.RoleSuperUser, false)
 	var allAdmin []*db.User
 	for i := 0; i < 6; i++ {
-		allAdmin = append(allAdmin, createRandomUser(db.RoleAdmin))
+		allAdmin = append(allAdmin, createRandomUser(db.RoleAdmin, false))
 	}
 
 	testCases := []struct {
