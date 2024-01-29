@@ -42,7 +42,7 @@ func newServer(store db.Store, maker token.Maker, env string) *Server {
 	return NewServer(store, maker, config)
 }
 
-func createRandomUser(role string) *db.User {
+func createRandomUser(role string, isDeleted bool) *db.User {
 	hashedPassword, err := util.HashPassword(util.RandomString(6))
 	if err != nil {
 		return nil
@@ -57,7 +57,7 @@ func createRandomUser(role string) *db.User {
 		PasswordChangedAt: t,
 		CreatedAt:         t,
 		Role:              createRandomRole(role),
-		IsDeleted:         false,
+		IsDeleted:         isDeleted,
 		DeletedAt:         time.Time{},
 	}
 }
