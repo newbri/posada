@@ -18,9 +18,9 @@ type Config struct {
 	RefreshTokenDuration    time.Duration `yaml:"refresh_token_duration"`
 	RedisAddress            string        `yaml:"http_redis_address"`
 	DefaultRole             string        `yaml:"default_role"`
-	authorizationHeaderKey  string        `yaml:"authorization_header_key"`
-	authorizationTypeBearer string        `yaml:"authorization_type_bearer"`
-	authorizationPayloadKey string        `yaml:"authorization_payload_key"`
+	AuthorizationHeaderKey  string        `yaml:"authorization_header_key"`
+	AuthorizationTypeBearer string        `yaml:"authorization_type_bearer"`
+	AuthorizationPayloadKey string        `yaml:"authorization_payload_key"`
 }
 
 type App struct {
