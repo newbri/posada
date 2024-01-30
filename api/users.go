@@ -278,7 +278,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 }
 
 func (server *Server) getUserInfo(ctx *gin.Context) {
-	data, _ := ctx.Get(authorizationPayloadKey)
+	data, _ := ctx.Get(server.config.AuthorizationPayloadKey)
 
 	payload, _ := data.(*token.Payload)
 	user, err := server.store.GetUser(ctx, payload.Username)

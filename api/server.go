@@ -39,7 +39,7 @@ func (server *Server) setupRouter() {
 
 	// admin
 	adminGroup := authGroup.Group("/admin")
-	adminGroup.Use(pasetoAuthRole(db.RoleAdmin))
+	adminGroup.Use(pasetoAuthRole(server, db.RoleAdmin))
 	adminGroup.POST("/role", server.createRole)
 	adminGroup.GET("/role/:id", server.getRole)
 	adminGroup.POST("/role/all", server.getAllRole)
@@ -51,7 +51,7 @@ func (server *Server) setupRouter() {
 
 	// su
 	suGroup := authGroup.Group("/su")
-	suGroup.Use(pasetoAuthRole(db.RoleSuperUser))
+	suGroup.Use(pasetoAuthRole(server, db.RoleSuperUser))
 	suGroup.POST("/role", server.createRole)
 	suGroup.GET("/role/:id", server.getRole)
 	suGroup.POST("/role/all", server.getAllRole)

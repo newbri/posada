@@ -12,7 +12,6 @@ import (
 const (
 	authorizationHeaderKey  = "authorization"
 	authorizationTypeBearer = "bearer"
-	authorizationPayloadKey = "authorization_payload"
 )
 
 var ErrInvalidAuthHeaderFormat = errors.New("invalid authorization header format")
@@ -21,7 +20,7 @@ var ErrAuthHeaderNotProvided = errors.New("authorization header is not provided"
 // authMiddleware is a Gin middleware function that performs authentication based on a provided token.
 func authMiddleware(server *Server) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		authorizationHeader := strings.TrimSpace(ctx.GetHeader(authorizationHeaderKey))
+		authorizationHeader := strings.TrimSpace(ctx.GetHeader(server.config.AuthorizationHeaderKey))
 		if len(authorizationHeader) == 0 {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(ErrAuthHeaderNotProvided))
 			return
@@ -58,14 +57,14 @@ func authMiddleware(server *Server) gin.HandlerFunc {
 			return
 		}
 
-		ctx.Set(authorizationPayloadKey, payload)
+		ctx.Set(server.config.AuthorizationPayloadKey, payload)
 		ctx.Next()
 	}
 }
 
-func pasetoAuthRole(role string) gin.HandlerFunc {
+func pasetoAuthRole(server *Server, role string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		data, exist := ctx.Get(authorizationPayloadKey)
+		data, exist := ctx.Get(server.config.AuthorizationPayloadKey)
 		if !exist {
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication data is required"})
 			ctx.Abort()
