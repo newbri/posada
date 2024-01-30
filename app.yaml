@@ -10,6 +10,9 @@ config:
         refresh_token_duration: 24h
         token_symmetric_key: 12345678901234567890123456789012
         default_role: customer
+        authorization_header_key: authorization
+        authorization_type_bearer: bearer
+        authorization_payload_key: authorization_payload
     test:
         name: test
         db_driver: postgres
@@ -21,6 +24,9 @@ config:
         refresh_token_duration: 24h
         token_symmetric_key: 12345678901234567890123456789012
         default_role: customer
+        authorization_header_key: authorization
+        authorization_type_bearer: bearer
+        authorization_payload_key: authorization_payload
     prod:
         name: production
         db_driver: postgres
@@ -32,3 +38,6 @@ config:
         refresh_token_duration: 24h
         token_symmetric_key: 12345678901234567890123456789012
         default_role: customer
+        authorization_header_key: authorization
+        authorization_type_bearer: bearer
+        authorization_payload_key: authorization_payload
