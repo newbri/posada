@@ -199,7 +199,7 @@ func TestCreateRole(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
-			server := newTestServer(store)
+			server := newTestServer(store, tc.env)
 			tc.mock(server)
 
 			data, err := json.Marshal(tc.body)
@@ -400,7 +400,7 @@ func TestGetAllRole(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
-			server := newTestServer(store)
+			server := newTestServer(store, tc.env)
 			tc.mock(server)
 
 			data, err := json.Marshal(tc.body)
@@ -585,7 +585,7 @@ func TestGetRole(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
-			server := newTestServer(store)
+			server := newTestServer(store, tc.env)
 			tc.mock(server)
 
 			url := fmt.Sprintf("/api/auth/admin/role/%s", tc.externalID)
@@ -829,7 +829,7 @@ func TestUpdateRole(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
-			server := newTestServer(store)
+			server := newTestServer(store, tc.env)
 			tc.mock(server)
 
 			data, err := json.Marshal(tc.body)
@@ -1014,7 +1014,7 @@ func TestDeleteRole(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
-			server := newTestServer(store)
+			server := newTestServer(store, tc.env)
 			tc.mock(server)
 
 			url := fmt.Sprintf("/api/auth/admin/role/%s", tc.externalID)

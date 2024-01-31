@@ -20,16 +20,8 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func newTestServer(store db.Store) *Server {
-	appConfig, err := util.NewYAMLConfiguration("../app.yaml")
-	if err != nil {
-		log.Fatal().Msg("cannot create app configuration")
-	}
-
-	config, err := appConfig.GetConfig("test")
-	if err != nil {
-		log.Fatal().Msg("cannot get app configuration")
-	}
+func newTestServer(store db.Store, env string) *Server {
+	config := getTestConfig(env)
 
 	maker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
 	if err != nil {
@@ -40,6 +32,12 @@ func newTestServer(store db.Store) *Server {
 }
 
 func newServer(store db.Store, maker token.Maker, env string) *Server {
+	config := getTestConfig(env)
+
+	return NewServer(store, maker, config)
+}
+
+func getTestConfig(env string) *util.Config {
 	appConfig, err := util.NewYAMLConfiguration("../app.yaml")
 	if err != nil {
 		log.Fatal().Msg("cannot create app configuration")
@@ -49,8 +47,7 @@ func newServer(store db.Store, maker token.Maker, env string) *Server {
 	if err != nil {
 		log.Fatal().Msg("cannot get app configuration")
 	}
-
-	return NewServer(store, maker, config)
+	return config
 }
 
 func createRandomUser(role string, isDeleted bool) *db.User {

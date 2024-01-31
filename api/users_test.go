@@ -280,7 +280,7 @@ func TestCreateUser(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
-			server := newTestServer(store)
+			server := newTestServer(store, tc.env)
 			tc.mock(server)
 
 			data, err := json.Marshal(tc.body)
@@ -303,12 +303,14 @@ func TestGetUser(t *testing.T) {
 	testCases := []struct {
 		name     string
 		username string
+		env      string
 		mock     func(server *Server)
 		response func(recorder *httptest.ResponseRecorder)
 		auth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 	}{
 		{
 			name:     "OK",
+			env:      "test",
 			username: adminUser.Username,
 			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
@@ -354,6 +356,7 @@ func TestGetUser(t *testing.T) {
 		},
 		{
 			name:     "StatusBadRequest",
+			env:      "test",
 			username: "-@",
 			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
@@ -385,6 +388,7 @@ func TestGetUser(t *testing.T) {
 		},
 		{
 			name:     "StatusNotFound",
+			env:      "test",
 			username: adminUser.Username,
 			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
@@ -417,6 +421,7 @@ func TestGetUser(t *testing.T) {
 		},
 		{
 			name:     "StatusInternalServerError",
+			env:      "test",
 			username: adminUser.Username,
 			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
@@ -455,7 +460,7 @@ func TestGetUser(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
-			server := newTestServer(store)
+			server := newTestServer(store, tc.env)
 			tc.mock(server)
 
 			url := fmt.Sprintf("/api/auth/admin/users/%s", tc.username)
@@ -477,6 +482,7 @@ func TestUpdateUser(t *testing.T) {
 
 	testCases := []struct {
 		name     string
+		env      string
 		body     gin.H
 		username string
 		mock     func(server *Server)
@@ -485,6 +491,7 @@ func TestUpdateUser(t *testing.T) {
 	}{
 		{
 			name: "OK",
+			env:  "test",
 			body: gin.H{
 				"username": adminUser.Username,
 				"email":    adminUser.Email,
@@ -542,6 +549,7 @@ func TestUpdateUser(t *testing.T) {
 		},
 		{
 			name: "OK Changing Password",
+			env:  "test",
 			body: gin.H{
 				"username":  adminUser.Username,
 				"password":  password,
@@ -600,6 +608,7 @@ func TestUpdateUser(t *testing.T) {
 		},
 		{
 			name:     "StatusBadRequest",
+			env:      "test",
 			username: "-@",
 			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
@@ -631,6 +640,7 @@ func TestUpdateUser(t *testing.T) {
 		},
 		{
 			name:     "StatusInternalServerError with long password",
+			env:      "test",
 			username: adminUser.Username,
 			body: gin.H{
 				"username":  adminUser.Username,
@@ -675,6 +685,7 @@ func TestUpdateUser(t *testing.T) {
 		},
 		{
 			name:     "StatusNotFound",
+			env:      "test",
 			username: adminUser.Username,
 			body: gin.H{
 				"username":  adminUser.Username,
@@ -720,6 +731,7 @@ func TestUpdateUser(t *testing.T) {
 		},
 		{
 			name:     "StatusInternalServerError",
+			env:      "test",
 			username: adminUser.Username,
 			body: gin.H{
 				"username":  adminUser.Username,
@@ -771,7 +783,7 @@ func TestUpdateUser(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
-			server := newTestServer(store)
+			server := newTestServer(store, tc.env)
 			tc.mock(server)
 
 			data, err := json.Marshal(tc.body)
@@ -794,6 +806,7 @@ func TestDeleteUser(t *testing.T) {
 
 	testCases := []struct {
 		name     string
+		env      string
 		username string
 		mock     func(server *Server)
 		response func(recorder *httptest.ResponseRecorder)
@@ -801,6 +814,7 @@ func TestDeleteUser(t *testing.T) {
 	}{
 		{
 			name:     "OK",
+			env:      "test",
 			username: adminUser.Username,
 			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
@@ -846,6 +860,7 @@ func TestDeleteUser(t *testing.T) {
 		},
 		{
 			name:     "StatusBadRequest",
+			env:      "test",
 			username: "-@",
 			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
@@ -877,6 +892,7 @@ func TestDeleteUser(t *testing.T) {
 		},
 		{
 			name:     "StatusNotFound",
+			env:      "test",
 			username: adminUser.Username,
 			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
@@ -909,6 +925,7 @@ func TestDeleteUser(t *testing.T) {
 		},
 		{
 			name:     "StatusInternalServerError",
+			env:      "test",
 			username: adminUser.Username,
 			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
@@ -947,7 +964,7 @@ func TestDeleteUser(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
-			server := newTestServer(store)
+			server := newTestServer(store, tc.env)
 			tc.mock(server)
 
 			url := fmt.Sprintf("/api/auth/admin/users/%s", tc.username)
@@ -1303,6 +1320,7 @@ func TestUserInfo(t *testing.T) {
 
 	testCases := []struct {
 		name     string
+		env      string
 		username string
 		mock     func(server *Server)
 		response func(recorder *httptest.ResponseRecorder)
@@ -1310,6 +1328,7 @@ func TestUserInfo(t *testing.T) {
 	}{
 		{
 			name:     "OK",
+			env:      "test",
 			username: adminUser.Username,
 			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
@@ -1355,6 +1374,7 @@ func TestUserInfo(t *testing.T) {
 		},
 		{
 			name:     "StatusNotFound",
+			env:      "test",
 			username: adminUser.Username,
 			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
@@ -1387,6 +1407,7 @@ func TestUserInfo(t *testing.T) {
 		},
 		{
 			name:     "StatusInternalServerError",
+			env:      "test",
 			username: adminUser.Username,
 			mock: func(server *Server) {
 				store, ok := server.store.(*mockdb.MockStore)
@@ -1425,7 +1446,7 @@ func TestUserInfo(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
-			server := newTestServer(store)
+			server := newTestServer(store, tc.env)
 			tc.mock(server)
 
 			url := "/api/auth/users/info"
@@ -1665,7 +1686,7 @@ func TestGetAllCustomer(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
-			server := newTestServer(store)
+			server := newTestServer(store, tc.env)
 			tc.mock(server)
 
 			// Marshal body data to JSON
@@ -1766,7 +1787,7 @@ func TestGetAllAdmin(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
-			server := newTestServer(store)
+			server := newTestServer(store, tc.env)
 			tc.mock(server)
 
 			// Marshal body data to JSON
