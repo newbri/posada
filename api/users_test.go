@@ -1007,10 +1007,10 @@ func TestLoginUser(t *testing.T) {
 					Return(expectedUser, nil)
 
 				accessToken, accessPayload, err := createToken(
-					server.config.TokenSymmetricKey,
+					server.config.GetConfig().TokenSymmetricKey,
 					expectedUser.Username,
 					expectedUser.Role,
-					server.config.AccessTokenDuration,
+					server.config.GetConfig().AccessTokenDuration,
 				)
 				require.NoError(t, err)
 
@@ -1025,10 +1025,10 @@ func TestLoginUser(t *testing.T) {
 					AnyTimes()
 
 				refreshToken, refreshPayload, err := createToken(
-					server.config.TokenSymmetricKey,
+					server.config.GetConfig().TokenSymmetricKey,
 					expectedUser.Username,
 					expectedUser.Role,
-					server.config.RefreshTokenDuration,
+					server.config.GetConfig().RefreshTokenDuration,
 				)
 				require.NoError(t, err)
 				maker.
@@ -1206,10 +1206,10 @@ func TestLoginUser(t *testing.T) {
 				require.True(t, ok)
 
 				accessToken, accessPayload, err := createToken(
-					server.config.TokenSymmetricKey,
+					server.config.GetConfig().TokenSymmetricKey,
 					expectedUser.Username,
 					expectedUser.Role,
-					server.config.AccessTokenDuration,
+					server.config.GetConfig().AccessTokenDuration,
 				)
 				maker.
 					EXPECT().
@@ -1254,10 +1254,10 @@ func TestLoginUser(t *testing.T) {
 					AnyTimes()
 
 				accessToken, accessPayload, err := createToken(
-					server.config.TokenSymmetricKey,
+					server.config.GetConfig().TokenSymmetricKey,
 					expectedUser.Username,
 					expectedUser.Role,
-					server.config.AccessTokenDuration,
+					server.config.GetConfig().AccessTokenDuration,
 				)
 
 				maker, ok := server.tokenMaker.(*mockdb.MockMaker)
@@ -1271,10 +1271,10 @@ func TestLoginUser(t *testing.T) {
 					AnyTimes()
 
 				refreshToken, refreshPayload, err := createToken(
-					server.config.TokenSymmetricKey,
+					server.config.GetConfig().TokenSymmetricKey,
 					expectedUser.Username,
 					expectedUser.Role,
-					server.config.RefreshTokenDuration,
+					server.config.GetConfig().RefreshTokenDuration,
 				)
 				maker.
 					EXPECT().

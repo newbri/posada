@@ -17,35 +17,31 @@ import (
 )
 
 func main() {
-	appConfig, err := util.NewYAMLConfiguration("app.yaml")
-	if err != nil {
-		log.Fatal().Msg("cannot create app configuration")
-	}
+	yamlConfig := util.NewYAMLConfiguration("app.yaml", "dev")
 
-	config, err := appConfig.GetConfig("dev")
-	if err != nil {
-		log.Fatal().Msg("cannot get app configuration")
-	}
-
-	if config.Name == "development" {
+	if yamlConfig.GetConfig().Name == "development" {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
 
-	conn, err := sql.Open(config.DBDriver, config.DBSource)
+	conn, err := sql.Open(yamlConfig.GetConfig().DBDriver, yamlConfig.GetConfig().DBSource)
 	if err != nil {
 		log.Fatal().Msg("could not connect to the database")
 	}
 
-	runDBMigration(config.MigrationURL, config.DBSource)
+	runDBMigration(yamlConfig.GetConfig().MigrationURL, yamlConfig.GetConfig().DBSource)
 
 	store := db.NewStore(conn)
 
-	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
+	tokenMaker, err := token.NewPasetoMaker(yamlConfig.GetConfig().TokenSymmetricKey)
 	if err != nil {
 		log.Fatal().Msg("cannot create token paseto")
 	}
 
-	runGinServer(store, tokenMaker, config)
+	server := api.NewServer(store, tokenMaker, yamlConfig)
+	err = server.Start(yamlConfig.GetConfig().HTTPServerAddress)
+	if err != nil {
+		log.Fatal().Msg("cannot start server")
+	}
 }
 
 func runDBMigration(migrationURL string, dbSource string) {
@@ -59,13 +55,4 @@ func runDBMigration(migrationURL string, dbSource string) {
 	}
 
 	log.Info().Msg("db migration successfully")
-}
-
-func runGinServer(store db.Store, maker token.Maker, config *util.Config) {
-	server := api.NewServer(store, maker, config)
-
-	err := server.Start(config.HTTPServerAddress)
-	if err != nil {
-		log.Fatal().Msg("cannot start server")
-	}
 }

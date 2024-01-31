@@ -1,15 +1,14 @@
 package util
 
 import (
-	"errors"
-	"fmt"
+	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 	"os"
 	"time"
 )
 
 type Configuration interface {
-	GetConfig(env string) (*Config, error)
+	GetConfig() *Config
 }
 
 type Config struct {
@@ -29,29 +28,39 @@ type Config struct {
 }
 
 type configYAML struct {
-	Config map[string]*Config `yaml:"config"`
+	config *Config
 }
 
-func NewYAMLConfiguration(path string) (Configuration, error) {
-	var yamlConfig configYAML
+func NewYAMLConfiguration(path string, env string) Configuration {
+	type data struct {
+		Config map[string]*Config `yaml:"config"`
+	}
+	var yamlConfig *data
 
 	fileBytes, err := os.ReadFile(path)
 	if err != nil {
-		return nil, errors.New("cannot load config")
+		log.Fatal().Msg("cannot load config")
 	}
 
 	err = yaml.Unmarshal(fileBytes, &yamlConfig)
 	if err != nil {
-		return nil, err
+		log.Fatal().Msg("unable to unmarshal YAML config")
 	}
 
-	return &yamlConfig, nil
+	if "" == env {
+		log.Fatal().Msg("the environment cannot be empty")
+	}
+
+	config, ok := yamlConfig.Config[env]
+	if !ok {
+		log.Fatal().Msg("the environment does not exist")
+	}
+
+	return &configYAML{
+		config: config,
+	}
 }
 
-func (app *configYAML) GetConfig(env string) (*Config, error) {
-	config, ok := app.Config[env]
-	if !ok {
-		return nil, fmt.Errorf("the environment does not exist")
-	}
-	return config, nil
+func (app *configYAML) GetConfig() *Config {
+	return app.config
 }

@@ -20,7 +20,7 @@ var ErrAuthHeaderNotProvided = errors.New("authorization header is not provided"
 // authMiddleware is a Gin middleware function that performs authentication based on a provided token.
 func authMiddleware(server *Server) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		authorizationHeader := strings.TrimSpace(ctx.GetHeader(server.config.AuthorizationHeaderKey))
+		authorizationHeader := strings.TrimSpace(ctx.GetHeader(server.config.GetConfig().AuthorizationHeaderKey))
 		if len(authorizationHeader) == 0 {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(ErrAuthHeaderNotProvided))
 			return
@@ -57,14 +57,14 @@ func authMiddleware(server *Server) gin.HandlerFunc {
 			return
 		}
 
-		ctx.Set(server.config.AuthorizationPayloadKey, payload)
+		ctx.Set(server.config.GetConfig().AuthorizationPayloadKey, payload)
 		ctx.Next()
 	}
 }
 
 func pasetoAuthRole(server *Server, role string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		data, exist := ctx.Get(server.config.AuthorizationPayloadKey)
+		data, exist := ctx.Get(server.config.GetConfig().AuthorizationPayloadKey)
 		if !exist {
 			err := errors.New("authentication data is required")
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))

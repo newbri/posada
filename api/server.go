@@ -8,13 +8,13 @@ import (
 )
 
 type Server struct {
-	config     *util.Config
+	config     util.Configuration
 	store      db.Store
 	router     *gin.Engine
 	tokenMaker token.Maker
 }
 
-func NewServer(store db.Store, tokenMaker token.Maker, config *util.Config) *Server {
+func NewServer(store db.Store, tokenMaker token.Maker, config util.Configuration) *Server {
 	server := &Server{store: store, tokenMaker: tokenMaker, config: config}
 
 	server.setupRouter()

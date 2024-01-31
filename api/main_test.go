@@ -7,7 +7,6 @@ import (
 	"github.com/newbri/posadamissportia/db"
 	"github.com/newbri/posadamissportia/db/util"
 	"github.com/newbri/posadamissportia/token"
-	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/require"
 	"net/http"
 	"os"
@@ -21,33 +20,19 @@ func TestMain(m *testing.M) {
 }
 
 func newTestServer(store db.Store, env string) *Server {
-	config := getTestConfig(env)
+	appConfig := util.NewYAMLConfiguration("../app.yaml", env)
 
-	maker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
+	maker, err := token.NewPasetoMaker(appConfig.GetConfig().TokenSymmetricKey)
 	if err != nil {
 		return nil
 	}
 
-	return NewServer(store, maker, config)
+	return NewServer(store, maker, appConfig)
 }
 
 func newServer(store db.Store, maker token.Maker, env string) *Server {
-	config := getTestConfig(env)
-
-	return NewServer(store, maker, config)
-}
-
-func getTestConfig(env string) *util.Config {
-	appConfig, err := util.NewYAMLConfiguration("../app.yaml")
-	if err != nil {
-		log.Fatal().Msg("cannot create app configuration")
-	}
-
-	config, err := appConfig.GetConfig(env)
-	if err != nil {
-		log.Fatal().Msg("cannot get app configuration")
-	}
-	return config
+	appConfig := util.NewYAMLConfiguration("../app.yaml", env)
+	return NewServer(store, maker, appConfig)
 }
 
 func createRandomUser(role string, isDeleted bool) *db.User {

@@ -62,10 +62,10 @@ func TestAuthMiddleware(t *testing.T) {
 				require.True(t, ok)
 
 				refreshToken, _, err := createToken(
-					server.config.TokenSymmetricKey,
+					server.config.GetConfig().TokenSymmetricKey,
 					adminUser.Username,
 					adminUser.Role,
-					server.config.RefreshTokenDuration,
+					server.config.GetConfig().RefreshTokenDuration,
 				)
 				require.NoError(t, err)
 
@@ -98,10 +98,10 @@ func TestAuthMiddleware(t *testing.T) {
 				require.True(t, ok)
 
 				refreshToken, _, err := createToken(
-					server.config.TokenSymmetricKey,
+					server.config.GetConfig().TokenSymmetricKey,
 					adminUser.Username,
 					adminUser.Role,
-					server.config.RefreshTokenDuration,
+					server.config.GetConfig().RefreshTokenDuration,
 				)
 				require.NoError(t, err)
 
@@ -134,10 +134,10 @@ func TestAuthMiddleware(t *testing.T) {
 				require.True(t, ok)
 
 				refreshToken, payload, err := createToken(
-					server.config.TokenSymmetricKey,
+					server.config.GetConfig().TokenSymmetricKey,
 					adminUser.Username,
 					adminUser.Role,
-					server.config.RefreshTokenDuration,
+					server.config.GetConfig().RefreshTokenDuration,
 				)
 				require.NoError(t, err)
 
@@ -175,10 +175,10 @@ func TestAuthMiddleware(t *testing.T) {
 				require.True(t, ok)
 
 				refreshToken, payload, err := createToken(
-					server.config.TokenSymmetricKey,
+					server.config.GetConfig().TokenSymmetricKey,
 					adminUser.Username,
 					adminUser.Role,
-					server.config.RefreshTokenDuration,
+					server.config.GetConfig().RefreshTokenDuration,
 				)
 				require.NoError(t, err)
 
@@ -225,10 +225,10 @@ func TestAuthMiddleware(t *testing.T) {
 				require.True(t, ok)
 
 				refreshToken, payload, err := createToken(
-					server.config.TokenSymmetricKey,
+					server.config.GetConfig().TokenSymmetricKey,
 					adminUser.Username,
 					adminUser.Role,
-					server.config.RefreshTokenDuration,
+					server.config.GetConfig().RefreshTokenDuration,
 				)
 				require.NoError(t, err)
 

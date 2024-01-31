@@ -36,7 +36,7 @@ func (server *Server) createUser(ctx *gin.Context) {
 		return
 	}
 
-	defaultRole := server.config.DefaultRole
+	defaultRole := server.config.GetConfig().DefaultRole
 	role, err := server.store.GetRoleByName(ctx, defaultRole)
 	if err != nil {
 		log.Info().Msg(ctx.Error(err).Error())
@@ -234,7 +234,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 	accessToken, accessPayload, err := server.tokenMaker.CreateToken(
 		user.Username,
 		user.Role,
-		server.config.AccessTokenDuration,
+		server.config.GetConfig().AccessTokenDuration,
 	)
 	if err != nil {
 		log.Info().Msg(ctx.Error(ErrInternalServer).Error())
@@ -244,7 +244,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 	refreshToken, refreshPayload, err := server.tokenMaker.CreateToken(
 		user.Username,
 		user.Role,
-		server.config.RefreshTokenDuration,
+		server.config.GetConfig().RefreshTokenDuration,
 	)
 	if err != nil {
 		log.Info().Msg(ctx.Error(ErrInternalServer).Error())
@@ -278,7 +278,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 }
 
 func (server *Server) getUserInfo(ctx *gin.Context) {
-	data, _ := ctx.Get(server.config.AuthorizationPayloadKey)
+	data, _ := ctx.Get(server.config.GetConfig().AuthorizationPayloadKey)
 
 	payload, _ := data.(*token.Payload)
 	user, err := server.store.GetUser(ctx, payload.Username)
