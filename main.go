@@ -17,9 +17,14 @@ import (
 )
 
 func main() {
-	config, err := util.LoadConfig("app.yaml", "dev")
+	appConfig, err := util.NewYAMLConfiguration("app.yaml")
 	if err != nil {
-		log.Fatal().Msg("cannot load config")
+		log.Fatal().Msg("cannot create app configuration")
+	}
+
+	config, err := appConfig.GetConfig("dev")
+	if err != nil {
+		log.Fatal().Msg("cannot get app configuration")
 	}
 
 	if config.Name == "development" {
