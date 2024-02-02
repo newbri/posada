@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/newbri/posadamissportia/configuration"
 	"github.com/newbri/posadamissportia/db"
 	"github.com/newbri/posadamissportia/db/util"
 	"github.com/newbri/posadamissportia/token"
@@ -20,7 +21,7 @@ func TestMain(m *testing.M) {
 }
 
 func newTestServer(store db.Store, env string) *Server {
-	appConfig := util.NewYAMLConfiguration("../app.yaml", env)
+	appConfig := configuration.NewYAMLConfiguration("../app.yaml", env)
 
 	maker, err := token.NewPasetoMaker(appConfig.GetConfig().TokenSymmetricKey)
 	if err != nil {
@@ -31,8 +32,12 @@ func newTestServer(store db.Store, env string) *Server {
 }
 
 func newServer(store db.Store, maker token.Maker, env string) *Server {
-	appConfig := util.NewYAMLConfiguration("../app.yaml", env)
-	return NewServer(store, maker, appConfig)
+	config := configuration.NewYAMLConfiguration("../app.yaml", env)
+	return NewServer(store, maker, config)
+}
+
+func newServerWithConfigurator(store db.Store, maker token.Maker, config configuration.Configuration) *Server {
+	return NewServer(store, maker, config)
 }
 
 func createRandomUser(role string, isDeleted bool) *db.User {
@@ -122,4 +127,31 @@ func createSession(user *db.User, refreshToken string) *db.Session {
 		ExpiredAt:    t.Add(time.Hour),
 		CreatedAt:    t,
 	}
+}
+
+func createConfiguration() *configuration.Config {
+	return &configuration.Config{
+		Name:                    util.RandomString(8),
+		DBDriver:                "postgres",
+		DBSource:                "postgresql://root:secret@localhost:5432/posada?sslmode=disable",
+		MigrationURL:            "file://db/migration",
+		HTTPServerAddress:       "0.0.0.0:8080",
+		TokenSymmetricKey:       "12345678901234567890123456789012",
+		AccessTokenDuration:     time.Minute * 15,
+		RefreshTokenDuration:    time.Hour * 24,
+		RedisAddress:            "0.0.0.0:6379",
+		DefaultRole:             "customer",
+		AuthorizationHeaderKey:  "authorization",
+		AuthorizationTypeBearer: "bearer",
+		AuthorizationPayloadKey: "authorization_payload",
+	}
+}
+
+func createRandomToken(username string, roleType string) (string, *token.Payload, error) {
+	role := createRandomRole(roleType)
+	tokenMaker, err := token.NewPasetoMaker("12345678901234567890123456789012")
+	if err != nil {
+		return "", nil, err
+	}
+	return tokenMaker.CreateToken(username, role, time.Minute*15)
 }

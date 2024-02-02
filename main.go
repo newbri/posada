@@ -8,8 +8,8 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
 	"github.com/newbri/posadamissportia/api"
+	"github.com/newbri/posadamissportia/configuration"
 	"github.com/newbri/posadamissportia/db"
-	"github.com/newbri/posadamissportia/db/util"
 	"github.com/newbri/posadamissportia/token"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -17,7 +17,7 @@ import (
 )
 
 func main() {
-	yamlConfig := util.NewYAMLConfiguration("app.yaml", "dev")
+	yamlConfig := configuration.NewYAMLConfiguration("app.yaml", "dev")
 
 	if yamlConfig.GetConfig().Name == "development" {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})

@@ -2,19 +2,19 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/newbri/posadamissportia/configuration"
 	"github.com/newbri/posadamissportia/db"
-	"github.com/newbri/posadamissportia/db/util"
 	"github.com/newbri/posadamissportia/token"
 )
 
 type Server struct {
-	config     util.Configuration
+	config     configuration.Configuration
 	store      db.Store
 	router     *gin.Engine
 	tokenMaker token.Maker
 }
 
-func NewServer(store db.Store, tokenMaker token.Maker, config util.Configuration) *Server {
+func NewServer(store db.Store, tokenMaker token.Maker, config configuration.Configuration) *Server {
 	server := &Server{store: store, tokenMaker: tokenMaker, config: config}
 
 	server.setupRouter()
@@ -32,10 +32,12 @@ func (server *Server) setupRouter() {
 	apiGroup.POST("/tokens/renew_access", server.renewAccessToken)
 
 	authGroup := apiGroup.Group("/auth")
-
 	authGroup.Use(authMiddleware(server))
-	authGroup.GET("/users/info", server.getUserInfo)
-	authGroup.PUT("/users", server.updateUser)
+
+	customerGroup := authGroup.Group("/customer")
+	customerGroup.Use(pasetoAuthRole(server, db.RoleCustomer))
+	customerGroup.GET("/users/info", server.getUserInfo)
+	customerGroup.PUT("/users", server.updateUser)
 
 	// admin
 	adminGroup := authGroup.Group("/admin")
@@ -47,6 +49,8 @@ func (server *Server) setupRouter() {
 	adminGroup.DELETE("/role/:id", server.deleteRole)
 	adminGroup.GET("/users/:username", server.getUser)
 	adminGroup.DELETE("/users/:username", server.deleteUser)
+	adminGroup.GET("/users/info", server.getUserInfo)
+	adminGroup.PUT("/users", server.updateUser)
 	adminGroup.POST("/users/all/customer", server.getAllCustomer)
 
 	// su
@@ -61,6 +65,8 @@ func (server *Server) setupRouter() {
 	suGroup.DELETE("/users/:username", server.deleteUser)
 	suGroup.POST("/users/all/customer", server.getAllCustomer)
 	suGroup.POST("/users/all/admin", server.getAllAdmin)
+	suGroup.GET("/users/info", server.getUserInfo)
+	suGroup.PUT("/users", server.updateUser)
 
 	server.router = router
 }

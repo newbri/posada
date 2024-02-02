@@ -240,7 +240,8 @@ func TestAuthMiddleware(t *testing.T) {
 
 				maker.
 					EXPECT().
-					VerifyToken(gomock.Any()).Times(1).
+					VerifyToken(gomock.Any()).
+					Times(1).
 					Return(payload, nil)
 
 				store, ok := server.store.(*mockdb.MockStore)
@@ -278,7 +279,111 @@ func TestAuthMiddleware(t *testing.T) {
 			server := newServer(store, maker, tc.env)
 			tc.mock(server)
 
-			url := "/api/auth/users/info"
+			url := "/api/auth/customer/users/info"
+			request, err := http.NewRequest(http.MethodGet, url, nil)
+			require.NoError(t, err)
+
+			tc.auth(t, request, server.tokenMaker)
+			recorder := httptest.NewRecorder()
+			server.router.ServeHTTP(recorder, request)
+			tc.response(recorder)
+		})
+	}
+}
+
+func TestPasetoAuthRole(t *testing.T) {
+	randomCustomer := createRandomUser(db.RoleCustomer, false)
+	config1 := createConfiguration()
+	config2 := createConfiguration()
+	testCases := []struct {
+		name     string
+		username string
+		env      string
+		body     gin.H
+		mock     func(server *Server)
+		response func(recorder *httptest.ResponseRecorder)
+		auth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+	}{
+		{
+			name:     "NoAuthorizationPayloadKey",
+			env:      "test",
+			username: randomCustomer.Username,
+			mock: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				store.
+					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(randomCustomer, nil)
+
+				maker, ok := server.tokenMaker.(*mockdb.MockMaker)
+				require.True(t, ok)
+
+				refreshToken, payload, err := createRandomToken(
+					randomCustomer.Username,
+					db.RoleCustomer,
+				)
+				require.NoError(t, err)
+
+				maker.
+					EXPECT().
+					CreateToken(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(refreshToken, payload, nil)
+
+				maker.
+					EXPECT().
+					VerifyToken(gomock.Any()).
+					Times(1).
+					Return(payload, nil)
+
+				configurator, ok := server.config.(*mockdb.MockConfiguration)
+				require.True(t, ok)
+
+				configurator.
+					EXPECT().
+					GetConfig().
+					Times(2).
+					Return(config1)
+
+				config2.AuthorizationPayloadKey = "wrong"
+
+				configurator.
+					EXPECT().
+					GetConfig().
+					Times(1).
+					Return(config2)
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusUnauthorized, recorder.Code)
+			},
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					randomCustomer.Username,
+					randomCustomer.Role,
+					time.Minute,
+				)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			store := mockdb.NewMockStore(ctrl)
+			maker := mockdb.NewMockMaker(ctrl)
+			config := mockdb.NewMockConfiguration(ctrl)
+			server := newServerWithConfigurator(store, maker, config)
+			tc.mock(server)
+
+			url := "/api/auth/customer/users/info"
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 

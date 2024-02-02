@@ -1,9 +1,6 @@
-package util
+package configuration
 
 import (
-	"github.com/rs/zerolog/log"
-	"gopkg.in/yaml.v3"
-	"os"
 	"time"
 )
 
@@ -25,42 +22,4 @@ type Config struct {
 	AuthorizationHeaderKey  string        `yaml:"authorization_header_key"`
 	AuthorizationTypeBearer string        `yaml:"authorization_type_bearer"`
 	AuthorizationPayloadKey string        `yaml:"authorization_payload_key"`
-}
-
-type configYAML struct {
-	config *Config
-}
-
-func NewYAMLConfiguration(path string, env string) Configuration {
-	type data struct {
-		Config map[string]*Config `yaml:"config"`
-	}
-	var yamlConfig *data
-
-	fileBytes, err := os.ReadFile(path)
-	if err != nil {
-		log.Fatal().Msg("cannot load config")
-	}
-
-	err = yaml.Unmarshal(fileBytes, &yamlConfig)
-	if err != nil {
-		log.Fatal().Msg("unable to unmarshal YAML config")
-	}
-
-	if "" == env {
-		log.Fatal().Msg("the environment cannot be empty")
-	}
-
-	config, ok := yamlConfig.Config[env]
-	if !ok {
-		log.Fatal().Msg("the environment does not exist")
-	}
-
-	return &configYAML{
-		config: config,
-	}
-}
-
-func (app *configYAML) GetConfig() *Config {
-	return app.config
 }

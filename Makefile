@@ -16,4 +16,7 @@ mock:
 mocktoken:
 	mockgen -package mockdb -destination db/mock/token.go github.com/newbri/posadamissportia/token Maker
 
-.PHONY: todo createdb migrateup migratedown mock
+mockconfig:
+	mockgen -package mockdb -destination db/mock/config.go github.com/newbri/posadamissportia/configuration Configuration
+
+.PHONY: todo createdb migrateup migratedown mock mockconfig
