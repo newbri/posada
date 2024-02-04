@@ -71,13 +71,7 @@ func pasetoAuthRole(server *Server, role string) gin.HandlerFunc {
 			return
 		}
 
-		payload, ok := data.(*token.Payload)
-		if !ok {
-			err := errors.New("authentication payload is required")
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
-			return
-		}
-
+		payload, _ := data.(*token.Payload)
 		if payload.Role.Name != role {
 			err := fmt.Errorf("only %s is allowed to perform this action", role)
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, err)
