@@ -89,3 +89,40 @@ func createRole() *Role {
 		CreatedAt:   time.Now(),
 	}
 }
+
+func getMockedExpectedUserRows(user *User) *sqlmock.Rows {
+	return sqlmock.NewRows([]string{"username", "hashed_password", "full_name", "email", "password_changed_at", "created_at", "role_id", "is_deleted", "deleted_at"}).
+		AddRow(
+			&user.Username,
+			&user.HashedPassword,
+			&user.FullName,
+			&user.Email,
+			&user.PasswordChangedAt,
+			&user.CreatedAt,
+			&user.Role.InternalID,
+			&user.IsDeleted,
+			&user.DeletedAt,
+		)
+}
+
+func getMockedExpectedRoleRows(role *Role) *sqlmock.Rows {
+	return sqlmock.NewRows([]string{"internal_id", "name", "description", "external_id", "updated_at", "created_at"}).
+		AddRow(
+			&role.InternalID,
+			&role.Name,
+			&role.Description,
+			&role.ExternalID,
+			&role.UpdatedAt,
+			&role.CreatedAt,
+		)
+}
+
+func createUserParams(user *User) *CreateUserParams {
+	return &CreateUserParams{
+		Username:       user.Username,
+		HashedPassword: user.HashedPassword,
+		FullName:       user.FullName,
+		Email:          user.Email,
+		RoleID:         user.Role.InternalID,
+	}
+}
