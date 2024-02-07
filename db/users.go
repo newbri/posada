@@ -21,7 +21,7 @@ type CreateUserParams struct {
 	RoleID         uuid.UUID `json:"-"`
 }
 
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (*User, error) {
+func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error) {
 	row := q.db.QueryRowContext(ctx, insertUserQuery,
 		arg.Username,
 		arg.HashedPassword,
