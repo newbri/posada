@@ -293,8 +293,6 @@ func TestAuthMiddleware(t *testing.T) {
 
 func TestPasetoAuthRole(t *testing.T) {
 	randomCustomer := createRandomUser(db.RoleCustomer, false)
-	config1 := createConfiguration()
-	config2 := createConfiguration()
 	testCases := []struct {
 		name     string
 		username string
@@ -342,6 +340,9 @@ func TestPasetoAuthRole(t *testing.T) {
 				configurator, ok := server.config.(*mockdb.MockConfiguration)
 				require.True(t, ok)
 
+				config1 := createConfiguration()
+				config2 := createConfiguration()
+
 				configurator.
 					EXPECT().
 					GetConfig().
@@ -349,6 +350,73 @@ func TestPasetoAuthRole(t *testing.T) {
 					Return(config1)
 
 				config2.AuthorizationPayloadKey = "wrong"
+
+				configurator.
+					EXPECT().
+					GetConfig().
+					Times(1).
+					Return(config2)
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusUnauthorized, recorder.Code)
+			},
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					randomCustomer.Username,
+					randomCustomer.Role,
+					time.Minute,
+				)
+			},
+		},
+		{
+			name:     "WrongPayload",
+			env:      "test",
+			username: randomCustomer.Username,
+			mock: func(server *Server) {
+				store, ok := server.store.(*mockdb.MockStore)
+				require.True(t, ok)
+
+				store.
+					EXPECT().
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(randomCustomer, nil)
+
+				maker, ok := server.tokenMaker.(*mockdb.MockMaker)
+				require.True(t, ok)
+
+				refreshToken, payload, err := createRandomToken(
+					randomCustomer.Username,
+					db.RoleVisitor,
+				)
+				require.NoError(t, err)
+
+				maker.
+					EXPECT().
+					CreateToken(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(refreshToken, payload, nil)
+
+				maker.
+					EXPECT().
+					VerifyToken(gomock.Any()).
+					Times(1).
+					Return(payload, nil)
+
+				configurator, ok := server.config.(*mockdb.MockConfiguration)
+				require.True(t, ok)
+
+				config1 := createConfiguration()
+				config2 := createConfiguration()
+
+				configurator.
+					EXPECT().
+					GetConfig().
+					Times(2).
+					Return(config1)
 
 				configurator.
 					EXPECT().

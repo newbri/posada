@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/newbri/posadamissportia/token"
+	"github.com/rs/zerolog/log"
 	"net/http"
 	"strings"
 )
@@ -22,13 +23,13 @@ func authMiddleware(server *Server) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		authorizationHeader := strings.TrimSpace(ctx.GetHeader(server.config.GetConfig().AuthorizationHeaderKey))
 		if len(authorizationHeader) == 0 {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(ErrAuthHeaderNotProvided))
+			log.Info().Msg(ctx.Error(ErrAuthHeaderNotProvided).Error())
 			return
 		}
 
 		fields := strings.Fields(authorizationHeader)
 		if len(fields) < 2 {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(ErrInvalidAuthHeaderFormat))
+			log.Info().Msg(ctx.Error(ErrInvalidAuthHeaderFormat).Error())
 			return
 		}
 
@@ -99,7 +100,7 @@ func errorHandlingMiddleware() gin.HandlerFunc {
 					ctx.JSON(http.StatusNotFound, gin.H{"errors": response})
 				case errors.Is(err.Err, ErrShouldBindUri):
 					ctx.JSON(http.StatusBadRequest, gin.H{"errors": response})
-				case errors.Is(err.Err, ErrVerifyToken):
+				case errors.Is(err.Err, ErrVerifyToken) || errors.Is(err.Err, ErrAuthHeaderNotProvided) || errors.Is(err.Err, ErrInvalidAuthHeaderFormat):
 					ctx.JSON(http.StatusUnauthorized, gin.H{"errors": response})
 				case errors.Is(err.Err, ErrSession):
 					ctx.JSON(http.StatusInternalServerError, gin.H{"errors": response})
