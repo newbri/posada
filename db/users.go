@@ -142,8 +142,8 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (*User, 
 const deleteUserQuery = `UPDATE users SET is_deleted = $1, deleted_at = $2 WHERE username = $3 AND is_deleted = $4
      RETURNING username, hashed_password, full_name, email, password_changed_at, created_at, role_id, is_deleted, deleted_at;`
 
-func (q *Queries) DeleteUser(ctx context.Context, username string) (*User, error) {
-	row := q.db.QueryRowContext(ctx, deleteUserQuery, true, time.Now(), username, false)
+func (q *Queries) DeleteUser(ctx context.Context, username string, deletedAt time.Time) (*User, error) {
+	row := q.db.QueryRowContext(ctx, deleteUserQuery, true, deletedAt, username, false)
 	var user User
 	var role Role
 	err := row.Scan(

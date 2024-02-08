@@ -105,6 +105,20 @@ func getMockedExpectedUserRows(user *User) *sqlmock.Rows {
 		)
 }
 
+func getMockedWrongExpectedUserRows(user *User) *sqlmock.Rows {
+	return sqlmock.NewRows([]string{"username", "hashed_password", "full_name", "email", "password_changed_at", "created_at", "role_id", "is_deleted"}).
+		AddRow(
+			&user.Username,
+			&user.HashedPassword,
+			&user.FullName,
+			&user.Email,
+			&user.PasswordChangedAt,
+			&user.CreatedAt,
+			&user.Role.InternalID,
+			&user.IsDeleted,
+		)
+}
+
 func getMockedExpectedRoleRows(role *Role) *sqlmock.Rows {
 	return sqlmock.NewRows([]string{"internal_id", "name", "description", "external_id", "updated_at", "created_at"}).
 		AddRow(

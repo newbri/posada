@@ -179,7 +179,8 @@ func (server *Server) deleteUser(ctx *gin.Context) {
 		return
 	}
 
-	user, err := server.store.DeleteUser(ctx, request.Username)
+	deletedAt := time.Now()
+	user, err := server.store.DeleteUser(ctx, request.Username, deletedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			log.Info().Msg(ctx.Error(ErrNoRow).Error())
