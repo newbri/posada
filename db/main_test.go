@@ -8,7 +8,6 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/newbri/posadamissportia/db/util"
 	"github.com/rs/zerolog/log"
-	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 	"time"
@@ -53,6 +52,14 @@ func createRandomUserWithRole(role string, isDeleted bool) *User {
 	}
 }
 
+func createMultipleRandomUserWithRole(amountUserToCreate uint, role string, isDeleted bool) []*User {
+	var users []*User
+	for i := uint(0); i < amountUserToCreate; i++ {
+		users = append(users, createRandomUserWithRole(role, isDeleted))
+	}
+	return users
+}
+
 func createRandomRole(roleType string) *Role {
 	t := time.Now()
 	return &Role{
@@ -62,20 +69,6 @@ func createRandomRole(roleType string) *Role {
 		ExternalID:  fmt.Sprintf("URE%d", util.RandomInt(101, 999)),
 		UpdatedAt:   t,
 		CreatedAt:   t,
-	}
-}
-
-func createRandomUser(t *testing.T) User {
-	hashedPassword, err := util.HashPassword(util.RandomString(6))
-	require.NoError(t, err)
-
-	return User{
-		Username:          util.RandomOwner(),
-		HashedPassword:    hashedPassword,
-		FullName:          util.RandomOwner(),
-		Email:             util.RandomEmail(),
-		PasswordChangedAt: time.Now(),
-		CreatedAt:         time.Now(),
 	}
 }
 
@@ -129,6 +122,24 @@ func getMockedExpectedRoleRows(role *Role) *sqlmock.Rows {
 			&role.UpdatedAt,
 			&role.CreatedAt,
 		)
+}
+
+func getMultipleMockedExpectedUserRows(users []*User) *sqlmock.Rows {
+	rowHeading := sqlmock.NewRows([]string{"username", "hashed_password", "full_name", "email", "password_changed_at", "created_at", "role_id", "is_deleted", "deleted_at"})
+	for _, user := range users {
+		rowHeading = rowHeading.AddRow(
+			&user.Username,
+			&user.HashedPassword,
+			&user.FullName,
+			&user.Email,
+			&user.PasswordChangedAt,
+			&user.CreatedAt,
+			&user.Role.InternalID,
+			&user.IsDeleted,
+			&user.DeletedAt,
+		)
+	}
+	return rowHeading
 }
 
 func createUserParams(user *User) *CreateUserParams {
