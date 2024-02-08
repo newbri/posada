@@ -39,13 +39,18 @@ func (m *mockQuerierDB) DeleteUser(ctx context.Context, username string, deleted
 }
 
 func TestCreateUser(t *testing.T) {
+	expectedUser := createRandomUserWithRole(RoleCustomer, false)
 	testCases := []struct {
-		name     string
-		mock     func(userQueryRows *sqlmock.Rows, roleQueryRows *sqlmock.Rows, arg *CreateUserParams, roleId uuid.UUID)
-		response func(querier Querier, expectedUser *User, arg *CreateUserParams)
+		name          string
+		userQueryRows *sqlmock.Rows
+		roleQueryRows *sqlmock.Rows
+		mock          func(userQueryRows *sqlmock.Rows, roleQueryRows *sqlmock.Rows, arg *CreateUserParams, roleId uuid.UUID)
+		response      func(querier Querier, expectedUser *User, arg *CreateUserParams)
 	}{
 		{
-			name: "OK",
+			name:          "OK",
+			userQueryRows: getMockedExpectedUserRows(expectedUser),
+			roleQueryRows: getMockedExpectedRoleRows(expectedUser.Role),
 			mock: func(userQueryRows *sqlmock.Rows, roleQueryRows *sqlmock.Rows, arg *CreateUserParams, roleId uuid.UUID) {
 				// the CreateUser sql mock
 				mocker.
@@ -77,26 +82,27 @@ func TestCreateUser(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockQuery := &mockQuerierDB{Queries: New(db)}
-			expectedUser := createRandomUserWithRole(RoleCustomer, false)
 
 			arg := createUserParams(expectedUser)
-			userQueryRows := getMockedExpectedUserRows(expectedUser)
-			roleQueryRows := getMockedExpectedRoleRows(expectedUser.Role)
-
-			tc.mock(userQueryRows, roleQueryRows, arg, expectedUser.Role.InternalID)
+			tc.mock(tc.userQueryRows, tc.roleQueryRows, arg, expectedUser.Role.InternalID)
 			tc.response(mockQuery, expectedUser, arg)
 		})
 	}
 }
 
 func TestGetUser(t *testing.T) {
+	expectedUser := createRandomUserWithRole(RoleCustomer, false)
 	testCases := []struct {
-		name     string
-		mock     func(userQueryRows *sqlmock.Rows, roleQueryRows *sqlmock.Rows, username string, roleId uuid.UUID, isDeleted bool)
-		response func(querier Querier, expectedUser *User)
+		name          string
+		userQueryRows *sqlmock.Rows
+		roleQueryRows *sqlmock.Rows
+		mock          func(userQueryRows *sqlmock.Rows, roleQueryRows *sqlmock.Rows, username string, roleId uuid.UUID, isDeleted bool)
+		response      func(querier Querier, expectedUser *User)
 	}{
 		{
-			name: "OK",
+			name:          "OK",
+			userQueryRows: getMockedExpectedUserRows(expectedUser),
+			roleQueryRows: getMockedExpectedRoleRows(expectedUser.Role),
 			mock: func(userQueryRows *sqlmock.Rows, roleQueryRows *sqlmock.Rows, username string, roleId uuid.UUID, isDeleted bool) {
 
 				// the CreateUser sql mock
@@ -122,12 +128,8 @@ func TestGetUser(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockQuery := &mockQuerierDB{Queries: New(db)}
-			expectedUser := createRandomUserWithRole(RoleCustomer, false)
 
-			userQueryRows := getMockedExpectedUserRows(expectedUser)
-			roleQueryRows := getMockedExpectedRoleRows(expectedUser.Role)
-
-			tc.mock(userQueryRows, roleQueryRows, expectedUser.Username, expectedUser.Role.InternalID, false)
+			tc.mock(tc.userQueryRows, tc.roleQueryRows, expectedUser.Username, expectedUser.Role.InternalID, false)
 			tc.response(mockQuery, expectedUser)
 		})
 	}
