@@ -196,9 +196,6 @@ func (q *Queries) getUsersByRole(ctx context.Context, query string, role string,
 		}
 		items = append(items, &user)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}

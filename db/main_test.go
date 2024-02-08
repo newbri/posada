@@ -142,6 +142,23 @@ func getMultipleMockedExpectedUserRows(users []*User) *sqlmock.Rows {
 	return rowHeading
 }
 
+func getMultipleWrongMockedExpectedUserRows(users []*User) *sqlmock.Rows {
+	rowHeading := sqlmock.NewRows([]string{"username", "hashed_password", "full_name", "email", "password_changed_at", "created_at", "role_id", "is_deleted"})
+	for _, user := range users {
+		rowHeading = rowHeading.AddRow(
+			&user.Username,
+			&user.HashedPassword,
+			&user.FullName,
+			&user.Email,
+			&user.PasswordChangedAt,
+			&user.CreatedAt,
+			&user.Role.InternalID,
+			&user.IsDeleted,
+		)
+	}
+	return rowHeading
+}
+
 func createUserParams(user *User) *CreateUserParams {
 	return &CreateUserParams{
 		Username:       user.Username,
