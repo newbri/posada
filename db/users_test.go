@@ -114,7 +114,7 @@ func TestCreateUser(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			mockQuery := &mockQuerierDB{Queries: New(db)}
+			mockQuery := &Queries{db: db}
 
 			arg := createUserParams(expectedUser)
 			tc.mock(tc.userQueryRows, tc.roleQueryRows, arg, expectedUser.Role.InternalID)
@@ -178,7 +178,7 @@ func TestGetUser(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			mockQuery := &mockQuerierDB{Queries: New(db)}
+			mockQuery := &Queries{db: db}
 
 			tc.mock(tc.userQueryRows, tc.roleQueryRows, expectedUser.Username, expectedUser.Role.InternalID, false)
 			tc.response(mockQuery, expectedUser)
@@ -284,7 +284,7 @@ func TestUpdateUser(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			mockQuery := &mockQuerierDB{Queries: New(db)}
+			mockQuery := &Queries{db: db}
 
 			tc.mock(tc.userQueryRows, tc.roleQueryRows, tc.arg, expectedUser.Role.InternalID, false)
 			tc.response(mockQuery, tc.arg)
@@ -344,7 +344,7 @@ func TestDeleteUser(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			mockQuery := &mockQuerierDB{Queries: New(db)}
+			mockQuery := &Queries{db: db}
 
 			deletedAt := time.Now()
 			tc.mock(tc.userQueryRows, tc.roleQueryRows, expectedUser.Username, deletedAt, expectedUser.Role.InternalID, false)
@@ -499,7 +499,7 @@ func TestGetAllCustomer(t *testing.T) {
 				}
 			}(db)
 
-			mockQuery := &mockQuerierDB{Queries: New(db)}
+			mockQuery := &Queries{db: db}
 
 			tc.mock(tc.userQueryRows, false, tc.arg)
 			tc.response(mockQuery, tc.arg)
@@ -560,7 +560,7 @@ func TestGetAllAdmin(t *testing.T) {
 				}
 			}(db)
 
-			mockQuery := &mockQuerierDB{Queries: New(db)}
+			mockQuery := &Queries{db: db}
 
 			tc.mock(tc.userQueryRows, false, tc.arg)
 			tc.response(mockQuery, tc.arg)
