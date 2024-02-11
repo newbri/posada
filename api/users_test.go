@@ -2,16 +2,18 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
+	"github.com/newbri/posadamissportia/configuration"
 	"github.com/newbri/posadamissportia/db"
-	mockdb "github.com/newbri/posadamissportia/db/mock"
 	"github.com/newbri/posadamissportia/db/util"
 	"github.com/newbri/posadamissportia/token"
-	"github.com/pkg/errors"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"io"
@@ -78,6 +80,98 @@ func EqUpdateUserParams(arg db.UpdateUserParams, password string) gomock.Matcher
 	return eqUpdateUserParamsMatcher{arg, password}
 }
 
+func (e eqUpdateUserParamsMatcher) updatePassword(x any) bool {
+	args, ok := x.(db.UpdateUserParams)
+	if !ok {
+		return false
+	}
+
+	err := util.CheckPassword(e.password, args.HashedPassword.String)
+	if err != nil {
+		return false
+	}
+
+	e.arg.HashedPassword = args.HashedPassword
+	return true
+}
+
+type mockQuerier struct {
+	mock.Mock
+	db.Querier
+	token.Maker
+}
+
+func (m *mockQuerier) GetRoleByName(ctx context.Context, name string) (*db.Role, error) {
+	args := m.Called(ctx, name)
+	ret0, _ := args.Get(0).(*db.Role)
+	ret1, _ := args.Get(1).(error)
+	return ret0, ret1
+}
+
+func (m *mockQuerier) CreateUser(ctx context.Context, arg *db.CreateUserParams) (*db.User, error) {
+	args := m.Called(ctx, arg)
+	ret0, _ := args.Get(0).(*db.User)
+	ret1, _ := args.Get(1).(error)
+	return ret0, ret1
+}
+
+func (m *mockQuerier) GetUser(ctx context.Context, username string) (*db.User, error) {
+	args := m.Called(ctx, username)
+	ret0, _ := args.Get(0).(*db.User)
+	ret1, _ := args.Get(1).(error)
+	return ret0, ret1
+}
+
+func (m *mockQuerier) DeleteUser(ctx context.Context, username string, deletedAt time.Time) (*db.User, error) {
+	args := m.Called(ctx, username, deletedAt)
+	ret0, _ := args.Get(0).(*db.User)
+	ret1, _ := args.Get(1).(error)
+	return ret0, ret1
+}
+
+func (m *mockQuerier) UpdateUser(ctx context.Context, arg db.UpdateUserParams) (*db.User, error) {
+	args := m.Called(ctx, arg)
+	ret0, _ := args.Get(0).(*db.User)
+	ret1, _ := args.Get(1).(error)
+	return ret0, ret1
+}
+
+func (m *mockQuerier) CreateToken(username string, role *db.Role, duration time.Duration) (string, *token.Payload, error) {
+	args := m.Called(username, role, duration)
+	ret0, _ := args.Get(0).(string)
+	ret1, _ := args.Get(1).(*token.Payload)
+	ret2, _ := args.Get(2).(error)
+	return ret0, ret1, ret2
+}
+
+func (m *mockQuerier) VerifyToken(tok string) (*token.Payload, error) {
+	args := m.Called(tok)
+	ret0, _ := args.Get(0).(*token.Payload)
+	ret1, _ := args.Get(1).(error)
+	return ret0, ret1
+}
+
+func (m *mockQuerier) CreateSession(ctx context.Context, arg db.CreateSessionParams) (*db.Session, error) {
+	args := m.Called(ctx, arg)
+	ret0, _ := args.Get(0).(*db.Session)
+	ret1, _ := args.Get(1).(error)
+	return ret0, ret1
+}
+
+func (m *mockQuerier) GetAllCustomer(ctx context.Context, arg db.ListUsersParams) ([]*db.User, error) {
+	args := m.Called(ctx, arg)
+	ret0, _ := args.Get(0).([]*db.User)
+	ret1, _ := args.Get(1).(error)
+	return ret0, ret1
+}
+
+func (m *mockQuerier) GetAllAdmin(ctx context.Context, arg db.ListUsersParams) ([]*db.User, error) {
+	args := m.Called(ctx, arg)
+	ret0, _ := args.Get(0).([]*db.User)
+	ret1, _ := args.Get(1).(error)
+	return ret0, ret1
+}
+
 func TestCreateUser(t *testing.T) {
 	password := "lexy84"
 	longPassword := util.RandomString(73)
@@ -100,20 +194,16 @@ func TestCreateUser(t *testing.T) {
 				"email":     expectedUser.Email,
 			},
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
 				role := createRandomRole(db.RoleCustomer)
-				store.
-					EXPECT().
-					GetRoleByName(gomock.Any(), gomock.Any()).
-					Times(1).
+				querier.
+					On("GetRoleByName", mock.Anything, role.Name).
 					Return(role, nil)
 
-				store.
-					EXPECT().
-					CreateUser(gomock.Any(), gomock.Any()).
-					Times(1).
+				querier.
+					On("CreateUser", mock.Anything, mock.Anything).
 					Return(expectedUser, nil)
 			},
 			response: func(recorder *httptest.ResponseRecorder) {
@@ -149,13 +239,12 @@ func TestCreateUser(t *testing.T) {
 					Email:    expectedUser.Email,
 				}
 
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					CreateUser(gomock.Any(), EqCreateUserParams(arg, password)).
-					Times(0)
+				querier.
+					On("CreateUser", mock.Anything, EqCreateUserParams(arg, password)).
+					Return(expectedUser, nil)
 			},
 			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
@@ -177,13 +266,12 @@ func TestCreateUser(t *testing.T) {
 					Email:    expectedUser.Email,
 				}
 
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					CreateUser(gomock.Any(), EqCreateUserParams(arg, longPassword)).
-					Times(0)
+				querier.
+					On("CreateUser", mock.Anything, EqCreateUserParams(arg, longPassword)).
+					Return(nil, fmt.Errorf("error creating user"))
 			},
 			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
@@ -199,20 +287,17 @@ func TestCreateUser(t *testing.T) {
 				"email":     expectedUser.Email,
 			},
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
 				role := createRandomRole(db.RoleCustomer)
-				store.
-					EXPECT().
-					GetRoleByName(gomock.Any(), gomock.Any()).
-					Times(1).
+
+				querier.
+					On("GetRoleByName", mock.Anything, mock.Anything).
 					Return(role, nil)
 
-				store.
-					EXPECT().
-					CreateUser(gomock.Any(), gomock.Any()).
-					Times(1).
+				querier.
+					On("CreateUser", mock.Anything, mock.Anything).
 					Return(nil, &pq.Error{Code: "23505"})
 			},
 			response: func(recorder *httptest.ResponseRecorder) {
@@ -229,20 +314,16 @@ func TestCreateUser(t *testing.T) {
 				"email":     expectedUser.Email,
 			},
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
 				role := createRandomRole(db.RoleCustomer)
-				store.
-					EXPECT().
-					GetRoleByName(gomock.Any(), gomock.Any()).
-					Times(1).
+				querier.
+					On("GetRoleByName", mock.Anything, mock.Anything).
 					Return(role, nil)
 
-				store.
-					EXPECT().
-					CreateUser(gomock.Any(), gomock.Any()).
-					Times(1).
+				querier.
+					On("CreateUser", mock.Anything, mock.Anything).
 					Return(nil, sql.ErrConnDone)
 			},
 			response: func(recorder *httptest.ResponseRecorder) {
@@ -259,13 +340,11 @@ func TestCreateUser(t *testing.T) {
 				"email":     expectedUser.Email,
 			},
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetRoleByName(gomock.Any(), gomock.Any()).
-					Times(1).
+				querier.
+					On("GetRoleByName", mock.Anything, mock.Anything).
 					Return(nil, fmt.Errorf("error exist"))
 			},
 			response: func(recorder *httptest.ResponseRecorder) {
@@ -276,11 +355,8 @@ func TestCreateUser(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			store := mockdb.NewMockStore(ctrl)
-			server := newTestServer(store, tc.env)
+			querier := new(mockQuerier)
+			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
 			data, err := json.Marshal(tc.body)
@@ -313,18 +389,11 @@ func TestGetUser(t *testing.T) {
 			env:      "test",
 			username: adminUser.Username,
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
-					Times(1).
-					Return(adminUser, nil)
-
-				store.EXPECT().
-					GetUser(gomock.Any(), adminUser.Username).
-					Times(1).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Return(adminUser, nil)
 			},
 			response: func(recorder *httptest.ResponseRecorder) {
@@ -359,17 +428,15 @@ func TestGetUser(t *testing.T) {
 			env:      "test",
 			username: "-@",
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
-					Times(1).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Return(adminUser, nil)
 
-				store.EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(0)
 			},
 			response: func(recorder *httptest.ResponseRecorder) {
@@ -391,17 +458,16 @@ func TestGetUser(t *testing.T) {
 			env:      "test",
 			username: adminUser.Username,
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(adminUser, nil)
 
-				store.EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(nil, sql.ErrNoRows)
 			},
@@ -424,17 +490,16 @@ func TestGetUser(t *testing.T) {
 			env:      "test",
 			username: adminUser.Username,
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(adminUser, nil)
 
-				store.EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(nil, sql.ErrConnDone)
 			},
@@ -456,11 +521,8 @@ func TestGetUser(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			store := mockdb.NewMockStore(ctrl)
-			server := newTestServer(store, tc.env)
+			querier := new(mockQuerier)
+			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
 			url := fmt.Sprintf("/api/auth/admin/users/%s", tc.username)
@@ -506,17 +568,16 @@ func TestUpdateUser(t *testing.T) {
 					},
 				}
 
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(customerUser, nil)
 
-				store.EXPECT().
-					UpdateUser(gomock.Any(), args).
+				querier.
+					On("UpdateUser", mock.AnythingOfType("*gin.Context"), args).
 					Times(1).
 					Return(customerUser, nil)
 			},
@@ -557,25 +618,20 @@ func TestUpdateUser(t *testing.T) {
 			},
 			username: customerUser.Username,
 			mock: func(server *Server) {
-				args := db.UpdateUserParams{
-					Username: customerUser.Username,
-					FullName: sql.NullString{
-						String: customerUser.FullName,
-						Valid:  true,
-					},
-				}
-
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(customerUser, nil)
 
-				store.EXPECT().
-					UpdateUser(gomock.Any(), EqUpdateUserParams(args, password)).
+				passwordMatcher := mock.MatchedBy(func(args db.UpdateUserParams) bool {
+					return util.CheckPassword(password, args.HashedPassword.String) == nil
+				})
+
+				querier.
+					On("UpdateUser", mock.Anything, passwordMatcher).
 					Times(1).
 					Return(customerUser, nil)
 			},
@@ -611,17 +667,16 @@ func TestUpdateUser(t *testing.T) {
 			env:      "test",
 			username: "-@",
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(customerUser, nil)
 
-				store.EXPECT().
-					UpdateUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("UpdateUser", mock.Anything, mock.Anything).
 					Times(0)
 			},
 			response: func(recorder *httptest.ResponseRecorder) {
@@ -656,17 +711,16 @@ func TestUpdateUser(t *testing.T) {
 					},
 				}
 
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(customerUser, nil)
 
-				store.EXPECT().
-					UpdateUser(gomock.Any(), EqUpdateUserParams(args, longPassword)).
+				querier.
+					On("UpdateUser", mock.Anything, EqUpdateUserParams(args, longPassword)).
 					Times(0)
 			},
 			response: func(recorder *httptest.ResponseRecorder) {
@@ -693,25 +747,20 @@ func TestUpdateUser(t *testing.T) {
 				"full_name": customerUser.FullName,
 			},
 			mock: func(server *Server) {
-				args := db.UpdateUserParams{
-					Username: customerUser.Username,
-					FullName: sql.NullString{
-						String: customerUser.FullName,
-						Valid:  true,
-					},
-				}
-
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(customerUser, nil)
 
-				store.EXPECT().
-					UpdateUser(gomock.Any(), EqUpdateUserParams(args, password)).
+				passwordMatcher := mock.MatchedBy(func(args db.UpdateUserParams) bool {
+					return util.CheckPassword(password, args.HashedPassword.String) == nil
+				})
+
+				querier.
+					On("UpdateUser", mock.Anything, passwordMatcher).
 					Times(1).
 					Return(nil, sql.ErrNoRows)
 			},
@@ -739,25 +788,20 @@ func TestUpdateUser(t *testing.T) {
 				"full_name": customerUser.FullName,
 			},
 			mock: func(server *Server) {
-				args := db.UpdateUserParams{
-					Username: customerUser.Username,
-					FullName: sql.NullString{
-						String: customerUser.FullName,
-						Valid:  true,
-					},
-				}
-
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(customerUser, nil)
 
-				store.EXPECT().
-					UpdateUser(gomock.Any(), EqUpdateUserParams(args, password)).
+				passwordMatcher := mock.MatchedBy(func(args db.UpdateUserParams) bool {
+					return util.CheckPassword(password, args.HashedPassword.String) == nil
+				})
+
+				querier.
+					On("UpdateUser", mock.Anything, passwordMatcher).
 					Times(1).
 					Return(nil, sql.ErrConnDone)
 			},
@@ -779,11 +823,8 @@ func TestUpdateUser(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			store := mockdb.NewMockStore(ctrl)
-			server := newTestServer(store, tc.env)
+			querier := new(mockQuerier)
+			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
 			data, err := json.Marshal(tc.body)
@@ -817,17 +858,16 @@ func TestDeleteUser(t *testing.T) {
 			env:      "test",
 			username: adminUser.Username,
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(adminUser, nil)
 
-				store.EXPECT().
-					DeleteUser(gomock.Any(), adminUser.Username).
+				querier.
+					On("DeleteUser", mock.Anything, mock.Anything, mock.Anything).
 					Times(1).
 					Return(adminUser, nil)
 			},
@@ -863,17 +903,16 @@ func TestDeleteUser(t *testing.T) {
 			env:      "test",
 			username: "-@",
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(adminUser, nil)
 
-				store.EXPECT().
-					DeleteUser(gomock.Any(), adminUser.Username).
+				querier.
+					On("DeleteUser", mock.Anything, mock.Anything, mock.Anything).
 					Times(0)
 			},
 			response: func(recorder *httptest.ResponseRecorder) {
@@ -895,17 +934,16 @@ func TestDeleteUser(t *testing.T) {
 			env:      "test",
 			username: adminUser.Username,
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(adminUser, nil)
 
-				store.EXPECT().
-					DeleteUser(gomock.Any(), adminUser.Username).
+				querier.
+					On("DeleteUser", mock.Anything, mock.Anything, mock.Anything).
 					Times(1).
 					Return(nil, sql.ErrNoRows)
 			},
@@ -928,17 +966,16 @@ func TestDeleteUser(t *testing.T) {
 			env:      "test",
 			username: adminUser.Username,
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(adminUser, nil)
 
-				store.EXPECT().
-					DeleteUser(gomock.Any(), adminUser.Username).
+				querier.
+					On("DeleteUser", mock.Anything, mock.Anything, mock.Anything).
 					Times(1).
 					Return(nil, sql.ErrConnDone)
 			},
@@ -960,11 +997,8 @@ func TestDeleteUser(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			store := mockdb.NewMockStore(ctrl)
-			server := newTestServer(store, tc.env)
+			querier := new(mockQuerier)
+			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
 			url := fmt.Sprintf("/api/auth/admin/users/%s", tc.username)
@@ -997,13 +1031,11 @@ func TestLoginUser(t *testing.T) {
 				"password": password,
 			},
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
-					Times(1).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Return(expectedUser, nil)
 
 				accessToken, accessPayload, err := createToken(
@@ -1014,15 +1046,16 @@ func TestLoginUser(t *testing.T) {
 				)
 				require.NoError(t, err)
 
-				maker, ok := server.tokenMaker.(*mockdb.MockMaker)
+				maker, ok := server.tokenMaker.(*mockQuerier)
 				require.True(t, ok)
 
 				maker.
-					EXPECT().
-					CreateToken(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).
-					Return(accessToken, accessPayload, nil).
-					AnyTimes()
+					On("CreateToken",
+						expectedUser.Username,
+						expectedUser.Role,
+						server.config.GetConfig().AccessTokenDuration,
+					).
+					Return(accessToken, accessPayload, nil)
 
 				refreshToken, refreshPayload, err := createToken(
 					server.config.GetConfig().TokenSymmetricKey,
@@ -1031,19 +1064,18 @@ func TestLoginUser(t *testing.T) {
 					server.config.GetConfig().RefreshTokenDuration,
 				)
 				require.NoError(t, err)
+
 				maker.
-					EXPECT().
-					CreateToken(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(2).
-					Return(refreshToken, refreshPayload, nil).
-					AnyTimes()
+					On("CreateToken",
+						expectedUser.Username,
+						expectedUser.Role,
+						server.config.GetConfig().RefreshTokenDuration,
+					).
+					Return(refreshToken, refreshPayload, nil)
 
 				session := createSession(expectedUser, refreshToken)
-
-				store.
-					EXPECT().
-					CreateSession(gomock.Any(), gomock.Any()).
-					Times(1).
+				querier.
+					On("CreateSession", mock.Anything, mock.Anything).
 					Return(session, nil)
 			},
 			response: func(recorder *httptest.ResponseRecorder) {
@@ -1058,12 +1090,11 @@ func TestLoginUser(t *testing.T) {
 				"password": password,
 			},
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(nil, sql.ErrNoRows)
 			},
@@ -1079,12 +1110,11 @@ func TestLoginUser(t *testing.T) {
 				"password": "incorrect",
 			},
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Eq(expectedUser.Username)).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(expectedUser, nil)
 			},
@@ -1100,12 +1130,11 @@ func TestLoginUser(t *testing.T) {
 				"password": password,
 			},
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(nil, sql.ErrConnDone)
 			},
@@ -1121,13 +1150,7 @@ func TestLoginUser(t *testing.T) {
 				"password1": password,
 			},
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
-				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
-					Times(0)
 			},
 			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
@@ -1141,12 +1164,11 @@ func TestLoginUser(t *testing.T) {
 				"password": password,
 			},
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Eq(expectedUser.Username)).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(nil, sql.ErrNoRows)
 			},
@@ -1162,24 +1184,25 @@ func TestLoginUser(t *testing.T) {
 				"password": password,
 			},
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
-					Times(1).
-					Return(expectedUser, nil)
+				querier.
+					On("GetUser", mock.Anything, expectedUser.Username).
+					Return(expectedUser, nil).Once()
 
-				maker, ok := server.tokenMaker.(*mockdb.MockMaker)
+				maker, ok := server.tokenMaker.(*mockQuerier)
 				require.True(t, ok)
 
+				err := errors.New("failed to create chacha20poly1305 cipher")
 				maker.
-					EXPECT().
-					CreateToken(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).
-					Return("", nil, errors.New("failed to create chacha20poly1305 cipher")).
-					AnyTimes()
+					On(
+						"CreateToken",
+						expectedUser.Username,
+						expectedUser.Role,
+						server.config.GetConfig().AccessTokenDuration,
+					).
+					Return("", nil, err)
 			},
 			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
@@ -1193,17 +1216,12 @@ func TestLoginUser(t *testing.T) {
 				"password": password,
 			},
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
-					Times(1).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Return(expectedUser, nil)
-
-				maker, ok := server.tokenMaker.(*mockdb.MockMaker)
-				require.True(t, ok)
 
 				accessToken, accessPayload, err := createToken(
 					server.config.GetConfig().TokenSymmetricKey,
@@ -1211,18 +1229,26 @@ func TestLoginUser(t *testing.T) {
 					expectedUser.Role,
 					server.config.GetConfig().AccessTokenDuration,
 				)
-				maker.
-					EXPECT().
-					CreateToken(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).
-					Return(accessToken, accessPayload, err)
+
+				maker, ok := server.tokenMaker.(*mockQuerier)
+				require.True(t, ok)
 
 				maker.
-					EXPECT().
-					CreateToken(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(2).
-					Return("", nil, errors.New("failed to create chacha20poly1305 cipher")).
-					AnyTimes()
+					On("CreateToken",
+						expectedUser.Username,
+						expectedUser.Role,
+						server.config.GetConfig().AccessTokenDuration,
+					).
+					Return(accessToken, accessPayload, err)
+
+				err = errors.New("failed to create chacha20poly1305 cipher")
+				maker.
+					On("CreateToken",
+						expectedUser.Username,
+						expectedUser.Role,
+						server.config.GetConfig().RefreshTokenDuration,
+					).
+					Return("", nil, err)
 			},
 			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
@@ -1236,22 +1262,18 @@ func TestLoginUser(t *testing.T) {
 				"password": password,
 			},
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Eq(expectedUser.Username)).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
-					Return(expectedUser, nil).
-					AnyTimes()
+					Return(expectedUser, nil)
 
-				store.
-					EXPECT().
-					CreateSession(gomock.Any(), gomock.Any()).
+				querier.
+					On("CreateSession", mock.Anything, mock.Anything).
 					Times(1).
-					Return(nil, sql.ErrNoRows).
-					AnyTimes()
+					Return(nil, sql.ErrNoRows)
 
 				accessToken, accessPayload, err := createToken(
 					server.config.GetConfig().TokenSymmetricKey,
@@ -1260,15 +1282,10 @@ func TestLoginUser(t *testing.T) {
 					server.config.GetConfig().AccessTokenDuration,
 				)
 
-				maker, ok := server.tokenMaker.(*mockdb.MockMaker)
-				require.True(t, ok)
-
-				maker.
-					EXPECT().
-					CreateToken(gomock.Any(), gomock.Any(), gomock.Any()).
+				querier.
+					On("CreateToken", mock.Anything, mock.Anything, mock.Anything).
 					Times(1).
-					Return(accessToken, accessPayload, err).
-					AnyTimes()
+					Return(accessToken, accessPayload, err)
 
 				refreshToken, refreshPayload, err := createToken(
 					server.config.GetConfig().TokenSymmetricKey,
@@ -1276,12 +1293,10 @@ func TestLoginUser(t *testing.T) {
 					expectedUser.Role,
 					server.config.GetConfig().RefreshTokenDuration,
 				)
-				maker.
-					EXPECT().
-					CreateToken(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(2).
-					Return(refreshToken, refreshPayload, err).
-					AnyTimes()
+				querier.
+					On("CreateToken", mock.Anything, mock.Anything, mock.Anything).
+					Times(1).
+					Return(refreshToken, refreshPayload, err)
 			},
 			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
@@ -1291,14 +1306,9 @@ func TestLoginUser(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			store := mockdb.NewMockStore(ctrl)
-			maker := mockdb.NewMockMaker(ctrl)
-			//configurator := mockdb.NewMockConfiguration(ctrl)
-
-			server := newServer(store, maker, tc.env)
+			querier := new(mockQuerier)
+			config := configuration.NewYAMLConfiguration("../app.yaml", tc.env)
+			server := newServerWithConfigurator(querier, querier, config)
 			tc.mock(server)
 
 			// Marshal body data to JSON
@@ -1312,6 +1322,8 @@ func TestLoginUser(t *testing.T) {
 			recorder := httptest.NewRecorder()
 			server.router.ServeHTTP(recorder, request)
 			tc.response(recorder)
+
+			querier.AssertExpectations(t)
 		})
 	}
 }
@@ -1332,18 +1344,11 @@ func TestUserInfo(t *testing.T) {
 			env:      "test",
 			username: customerUser.Username,
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
-					Times(1).
-					Return(customerUser, nil)
-
-				store.EXPECT().
-					GetUser(gomock.Any(), customerUser.Username).
-					Times(1).
+				querier.
+					On("GetUser", mock.AnythingOfType("*gin.Context"), customerUser.Username).
 					Return(customerUser, nil)
 			},
 			response: func(recorder *httptest.ResponseRecorder) {
@@ -1378,17 +1383,16 @@ func TestUserInfo(t *testing.T) {
 			env:      "test",
 			username: customerUser.Username,
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(customerUser, nil)
 
-				store.EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(nil, sql.ErrNoRows)
 			},
@@ -1411,17 +1415,16 @@ func TestUserInfo(t *testing.T) {
 			env:      "test",
 			username: customerUser.Username,
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, customerUser.Username).
 					Times(1).
 					Return(customerUser, nil)
 
-				store.EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, customerUser.Username).
 					Times(1).
 					Return(nil, sql.ErrConnDone)
 			},
@@ -1443,11 +1446,8 @@ func TestUserInfo(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			store := mockdb.NewMockStore(ctrl)
-			server := newTestServer(store, tc.env)
+			querier := new(mockQuerier)
+			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
 			url := "/api/auth/customer/users/info"
@@ -1485,17 +1485,16 @@ func TestGetAllCustomer(t *testing.T) {
 				"limit":  6,
 			},
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(adminUser, nil)
 
-				store.EXPECT().
-					GetAllCustomer(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetAllCustomer", mock.Anything, mock.Anything).
 					Times(1).
 					Return(allCustomer, nil)
 			},
@@ -1544,17 +1543,16 @@ func TestGetAllCustomer(t *testing.T) {
 				"limit1": 6,
 			},
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(adminUser, nil)
 
-				store.EXPECT().
-					GetAllCustomer(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetAllCustomer", mock.Anything, mock.Anything).
 					Times(0)
 			},
 			response: func(recorder *httptest.ResponseRecorder) {
@@ -1579,17 +1577,16 @@ func TestGetAllCustomer(t *testing.T) {
 				"limit":  6,
 			},
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(adminUser, nil)
 
-				store.EXPECT().
-					GetAllCustomer(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetAllCustomer", mock.Anything, mock.Anything).
 					Times(1).
 					Return(nil, sql.ErrNoRows)
 			},
@@ -1615,17 +1612,16 @@ func TestGetAllCustomer(t *testing.T) {
 				"limit":  6,
 			},
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(adminUser, nil)
 
-				store.EXPECT().
-					GetAllCustomer(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetAllCustomer", mock.Anything, mock.Anything).
 					Times(1).
 					Return(nil, sql.ErrConnDone)
 			},
@@ -1651,17 +1647,16 @@ func TestGetAllCustomer(t *testing.T) {
 				"limit":  6,
 			},
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(adminUser, nil)
 
-				store.EXPECT().
-					GetAllCustomer(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetAllCustomer", mock.Anything, mock.Anything).
 					Times(1).
 					Return(nil, nil)
 			},
@@ -1683,11 +1678,8 @@ func TestGetAllCustomer(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			store := mockdb.NewMockStore(ctrl)
-			server := newTestServer(store, tc.env)
+			querier := new(mockQuerier)
+			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
 			// Marshal body data to JSON
@@ -1729,17 +1721,16 @@ func TestGetAllAdmin(t *testing.T) {
 				"limit":  6,
 			},
 			mock: func(server *Server) {
-				store, ok := server.store.(*mockdb.MockStore)
+				querier, ok := server.store.(*mockQuerier)
 				require.True(t, ok)
 
-				store.
-					EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
 					Times(1).
 					Return(superUser, nil)
 
-				store.EXPECT().
-					GetAllAdmin(gomock.Any(), gomock.Any()).
+				querier.
+					On("GetAllAdmin", mock.Anything, mock.Anything).
 					Times(1).
 					Return(allAdmin, nil)
 			},
@@ -1784,11 +1775,8 @@ func TestGetAllAdmin(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			store := mockdb.NewMockStore(ctrl)
-			server := newTestServer(store, tc.env)
+			querier := new(mockQuerier)
+			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
 			// Marshal body data to JSON
