@@ -172,6 +172,41 @@ func (m *mockQuerier) GetAllAdmin(ctx context.Context, arg db.ListUsersParams) (
 	return ret0, ret1
 }
 
+func (m *mockQuerier) CreateRole(ctx context.Context, arg db.CreateRoleParams) (*db.Role, error) {
+	args := m.Called(ctx, arg)
+	ret0, _ := args.Get(0).(*db.Role)
+	ret1, _ := args.Get(1).(error)
+	return ret0, ret1
+}
+
+func (m *mockQuerier) GetAllRole(ctx context.Context, arg db.ListRoleParams) ([]*db.Role, error) {
+	args := m.Called(ctx, arg)
+	ret0, _ := args.Get(0).([]*db.Role)
+	ret1, _ := args.Get(1).(error)
+	return ret0, ret1
+}
+
+func (m *mockQuerier) GetRole(ctx context.Context, externalId string) (*db.Role, error) {
+	args := m.Called(ctx, externalId)
+	ret0, _ := args.Get(0).(*db.Role)
+	ret1, _ := args.Get(1).(error)
+	return ret0, ret1
+}
+
+func (m *mockQuerier) UpdateRole(ctx context.Context, arg db.UpdateRoleParams) (*db.Role, error) {
+	args := m.Called(ctx, arg)
+	ret0, _ := args.Get(0).(*db.Role)
+	ret1, _ := args.Get(1).(error)
+	return ret0, ret1
+}
+
+func (m *mockQuerier) DeleteRole(ctx context.Context, externalID string) (*db.Role, error) {
+	args := m.Called(ctx, externalID)
+	ret0, _ := args.Get(0).(*db.Role)
+	ret1, _ := args.Get(1).(error)
+	return ret0, ret1
+}
+
 func TestCreateUser(t *testing.T) {
 	password := "lexy84"
 	longPassword := util.RandomString(73)
