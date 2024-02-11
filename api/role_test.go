@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
 	"github.com/newbri/posadamissportia/db"
+	"github.com/newbri/posadamissportia/mocker"
 	"github.com/newbri/posadamissportia/token"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -38,7 +39,7 @@ func TestCreateRole(t *testing.T) {
 				"description": expectedRole.Description,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -86,7 +87,7 @@ func TestCreateRole(t *testing.T) {
 				"description1": expectedRole.Description,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -120,7 +121,7 @@ func TestCreateRole(t *testing.T) {
 				"description": expectedRole.Description,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -155,7 +156,7 @@ func TestCreateRole(t *testing.T) {
 				"description": expectedRole.Description,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -186,7 +187,7 @@ func TestCreateRole(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			querier := new(mockQuerier)
+			querier := new(mocker.TestMocker)
 			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
@@ -225,7 +226,7 @@ func TestGetAllRole(t *testing.T) {
 				"limit":  2,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -275,7 +276,7 @@ func TestGetAllRole(t *testing.T) {
 				"limit1": 2,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -309,7 +310,7 @@ func TestGetAllRole(t *testing.T) {
 				"limit":  2,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -344,7 +345,7 @@ func TestGetAllRole(t *testing.T) {
 				"limit":  2,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -375,7 +376,7 @@ func TestGetAllRole(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			querier := new(mockQuerier)
+			querier := new(mocker.TestMocker)
 			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
@@ -410,7 +411,7 @@ func TestGetRole(t *testing.T) {
 			externalID: role.ExternalID,
 			env:        "test",
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -455,7 +456,7 @@ func TestGetRole(t *testing.T) {
 			externalID: "-@anewball",
 			env:        "test",
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -486,7 +487,7 @@ func TestGetRole(t *testing.T) {
 			externalID: role.ExternalID,
 			env:        "test",
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -518,7 +519,7 @@ func TestGetRole(t *testing.T) {
 			externalID: role.ExternalID,
 			env:        "test",
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -549,7 +550,7 @@ func TestGetRole(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			querier := new(mockQuerier)
+			querier := new(mocker.TestMocker)
 			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
@@ -584,7 +585,7 @@ func TestUpdateRole(t *testing.T) {
 				"name":        role.Name,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -632,7 +633,7 @@ func TestUpdateRole(t *testing.T) {
 				"description": role.Description,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -680,7 +681,7 @@ func TestUpdateRole(t *testing.T) {
 				"description":  role.Description,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -714,7 +715,7 @@ func TestUpdateRole(t *testing.T) {
 				"description": role.Description,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -749,7 +750,7 @@ func TestUpdateRole(t *testing.T) {
 				"description": role.Description,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -780,7 +781,7 @@ func TestUpdateRole(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			querier := new(mockQuerier)
+			querier := new(mocker.TestMocker)
 			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
@@ -815,7 +816,7 @@ func TestDeleteRole(t *testing.T) {
 			externalID: role.ExternalID,
 			env:        "test",
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -860,7 +861,7 @@ func TestDeleteRole(t *testing.T) {
 			externalID: "-@anewball",
 			env:        "test",
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -891,7 +892,7 @@ func TestDeleteRole(t *testing.T) {
 			externalID: role.ExternalID,
 			env:        "test",
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -923,7 +924,7 @@ func TestDeleteRole(t *testing.T) {
 			externalID: role.ExternalID,
 			env:        "test",
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -954,7 +955,7 @@ func TestDeleteRole(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			querier := new(mockQuerier)
+			querier := new(mocker.TestMocker)
 			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 

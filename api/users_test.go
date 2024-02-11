@@ -2,7 +2,6 @@ package api
 
 import (
 	"bytes"
-	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -12,6 +11,7 @@ import (
 	"github.com/newbri/posadamissportia/configuration"
 	"github.com/newbri/posadamissportia/db"
 	"github.com/newbri/posadamissportia/db/util"
+	"github.com/newbri/posadamissportia/mocker"
 	"github.com/newbri/posadamissportia/token"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -80,133 +80,6 @@ func EqUpdateUserParams(arg db.UpdateUserParams, password string) gomock.Matcher
 	return eqUpdateUserParamsMatcher{arg, password}
 }
 
-func (e eqUpdateUserParamsMatcher) updatePassword(x any) bool {
-	args, ok := x.(db.UpdateUserParams)
-	if !ok {
-		return false
-	}
-
-	err := util.CheckPassword(e.password, args.HashedPassword.String)
-	if err != nil {
-		return false
-	}
-
-	e.arg.HashedPassword = args.HashedPassword
-	return true
-}
-
-type mockQuerier struct {
-	mock.Mock
-	db.Querier
-	token.Maker
-}
-
-func (m *mockQuerier) GetRoleByName(ctx context.Context, name string) (*db.Role, error) {
-	args := m.Called(ctx, name)
-	ret0, _ := args.Get(0).(*db.Role)
-	ret1, _ := args.Get(1).(error)
-	return ret0, ret1
-}
-
-func (m *mockQuerier) CreateUser(ctx context.Context, arg *db.CreateUserParams) (*db.User, error) {
-	args := m.Called(ctx, arg)
-	ret0, _ := args.Get(0).(*db.User)
-	ret1, _ := args.Get(1).(error)
-	return ret0, ret1
-}
-
-func (m *mockQuerier) GetUser(ctx context.Context, username string) (*db.User, error) {
-	args := m.Called(ctx, username)
-	ret0, _ := args.Get(0).(*db.User)
-	ret1, _ := args.Get(1).(error)
-	return ret0, ret1
-}
-
-func (m *mockQuerier) DeleteUser(ctx context.Context, username string, deletedAt time.Time) (*db.User, error) {
-	args := m.Called(ctx, username, deletedAt)
-	ret0, _ := args.Get(0).(*db.User)
-	ret1, _ := args.Get(1).(error)
-	return ret0, ret1
-}
-
-func (m *mockQuerier) UpdateUser(ctx context.Context, arg db.UpdateUserParams) (*db.User, error) {
-	args := m.Called(ctx, arg)
-	ret0, _ := args.Get(0).(*db.User)
-	ret1, _ := args.Get(1).(error)
-	return ret0, ret1
-}
-
-func (m *mockQuerier) CreateToken(username string, role *db.Role, duration time.Duration) (string, *token.Payload, error) {
-	args := m.Called(username, role, duration)
-	ret0, _ := args.Get(0).(string)
-	ret1, _ := args.Get(1).(*token.Payload)
-	ret2, _ := args.Get(2).(error)
-	return ret0, ret1, ret2
-}
-
-func (m *mockQuerier) VerifyToken(tok string) (*token.Payload, error) {
-	args := m.Called(tok)
-	ret0, _ := args.Get(0).(*token.Payload)
-	ret1, _ := args.Get(1).(error)
-	return ret0, ret1
-}
-
-func (m *mockQuerier) CreateSession(ctx context.Context, arg db.CreateSessionParams) (*db.Session, error) {
-	args := m.Called(ctx, arg)
-	ret0, _ := args.Get(0).(*db.Session)
-	ret1, _ := args.Get(1).(error)
-	return ret0, ret1
-}
-
-func (m *mockQuerier) GetAllCustomer(ctx context.Context, arg db.ListUsersParams) ([]*db.User, error) {
-	args := m.Called(ctx, arg)
-	ret0, _ := args.Get(0).([]*db.User)
-	ret1, _ := args.Get(1).(error)
-	return ret0, ret1
-}
-
-func (m *mockQuerier) GetAllAdmin(ctx context.Context, arg db.ListUsersParams) ([]*db.User, error) {
-	args := m.Called(ctx, arg)
-	ret0, _ := args.Get(0).([]*db.User)
-	ret1, _ := args.Get(1).(error)
-	return ret0, ret1
-}
-
-func (m *mockQuerier) CreateRole(ctx context.Context, arg db.CreateRoleParams) (*db.Role, error) {
-	args := m.Called(ctx, arg)
-	ret0, _ := args.Get(0).(*db.Role)
-	ret1, _ := args.Get(1).(error)
-	return ret0, ret1
-}
-
-func (m *mockQuerier) GetAllRole(ctx context.Context, arg db.ListRoleParams) ([]*db.Role, error) {
-	args := m.Called(ctx, arg)
-	ret0, _ := args.Get(0).([]*db.Role)
-	ret1, _ := args.Get(1).(error)
-	return ret0, ret1
-}
-
-func (m *mockQuerier) GetRole(ctx context.Context, externalId string) (*db.Role, error) {
-	args := m.Called(ctx, externalId)
-	ret0, _ := args.Get(0).(*db.Role)
-	ret1, _ := args.Get(1).(error)
-	return ret0, ret1
-}
-
-func (m *mockQuerier) UpdateRole(ctx context.Context, arg db.UpdateRoleParams) (*db.Role, error) {
-	args := m.Called(ctx, arg)
-	ret0, _ := args.Get(0).(*db.Role)
-	ret1, _ := args.Get(1).(error)
-	return ret0, ret1
-}
-
-func (m *mockQuerier) DeleteRole(ctx context.Context, externalID string) (*db.Role, error) {
-	args := m.Called(ctx, externalID)
-	ret0, _ := args.Get(0).(*db.Role)
-	ret1, _ := args.Get(1).(error)
-	return ret0, ret1
-}
-
 func TestCreateUser(t *testing.T) {
 	password := "lexy84"
 	longPassword := util.RandomString(73)
@@ -229,7 +102,7 @@ func TestCreateUser(t *testing.T) {
 				"email":     expectedUser.Email,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				role := createRandomRole(db.RoleCustomer)
@@ -274,7 +147,7 @@ func TestCreateUser(t *testing.T) {
 					Email:    expectedUser.Email,
 				}
 
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -301,7 +174,7 @@ func TestCreateUser(t *testing.T) {
 					Email:    expectedUser.Email,
 				}
 
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -322,7 +195,7 @@ func TestCreateUser(t *testing.T) {
 				"email":     expectedUser.Email,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				role := createRandomRole(db.RoleCustomer)
@@ -349,7 +222,7 @@ func TestCreateUser(t *testing.T) {
 				"email":     expectedUser.Email,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				role := createRandomRole(db.RoleCustomer)
@@ -375,7 +248,7 @@ func TestCreateUser(t *testing.T) {
 				"email":     expectedUser.Email,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -390,7 +263,7 @@ func TestCreateUser(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			querier := new(mockQuerier)
+			querier := new(mocker.TestMocker)
 			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
@@ -424,7 +297,7 @@ func TestGetUser(t *testing.T) {
 			env:      "test",
 			username: adminUser.Username,
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -463,7 +336,7 @@ func TestGetUser(t *testing.T) {
 			env:      "test",
 			username: "-@",
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -493,7 +366,7 @@ func TestGetUser(t *testing.T) {
 			env:      "test",
 			username: adminUser.Username,
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -525,7 +398,7 @@ func TestGetUser(t *testing.T) {
 			env:      "test",
 			username: adminUser.Username,
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -556,7 +429,7 @@ func TestGetUser(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			querier := new(mockQuerier)
+			querier := new(mocker.TestMocker)
 			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
@@ -603,7 +476,7 @@ func TestUpdateUser(t *testing.T) {
 					},
 				}
 
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -653,7 +526,7 @@ func TestUpdateUser(t *testing.T) {
 			},
 			username: customerUser.Username,
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -702,7 +575,7 @@ func TestUpdateUser(t *testing.T) {
 			env:      "test",
 			username: "-@",
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -746,7 +619,7 @@ func TestUpdateUser(t *testing.T) {
 					},
 				}
 
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -782,7 +655,7 @@ func TestUpdateUser(t *testing.T) {
 				"full_name": customerUser.FullName,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -823,7 +696,7 @@ func TestUpdateUser(t *testing.T) {
 				"full_name": customerUser.FullName,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -858,7 +731,7 @@ func TestUpdateUser(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			querier := new(mockQuerier)
+			querier := new(mocker.TestMocker)
 			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
@@ -893,7 +766,7 @@ func TestDeleteUser(t *testing.T) {
 			env:      "test",
 			username: adminUser.Username,
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -938,7 +811,7 @@ func TestDeleteUser(t *testing.T) {
 			env:      "test",
 			username: "-@",
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -969,7 +842,7 @@ func TestDeleteUser(t *testing.T) {
 			env:      "test",
 			username: adminUser.Username,
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -1001,7 +874,7 @@ func TestDeleteUser(t *testing.T) {
 			env:      "test",
 			username: adminUser.Username,
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -1032,7 +905,7 @@ func TestDeleteUser(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			querier := new(mockQuerier)
+			querier := new(mocker.TestMocker)
 			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
@@ -1066,7 +939,7 @@ func TestLoginUser(t *testing.T) {
 				"password": password,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -1081,7 +954,7 @@ func TestLoginUser(t *testing.T) {
 				)
 				require.NoError(t, err)
 
-				maker, ok := server.tokenMaker.(*mockQuerier)
+				maker, ok := server.tokenMaker.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				maker.
@@ -1125,7 +998,7 @@ func TestLoginUser(t *testing.T) {
 				"password": password,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -1145,7 +1018,7 @@ func TestLoginUser(t *testing.T) {
 				"password": "incorrect",
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -1165,7 +1038,7 @@ func TestLoginUser(t *testing.T) {
 				"password": password,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -1199,7 +1072,7 @@ func TestLoginUser(t *testing.T) {
 				"password": password,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -1219,14 +1092,14 @@ func TestLoginUser(t *testing.T) {
 				"password": password,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
 					On("GetUser", mock.Anything, expectedUser.Username).
 					Return(expectedUser, nil).Once()
 
-				maker, ok := server.tokenMaker.(*mockQuerier)
+				maker, ok := server.tokenMaker.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				err := errors.New("failed to create chacha20poly1305 cipher")
@@ -1251,7 +1124,7 @@ func TestLoginUser(t *testing.T) {
 				"password": password,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -1265,7 +1138,7 @@ func TestLoginUser(t *testing.T) {
 					server.config.GetConfig().AccessTokenDuration,
 				)
 
-				maker, ok := server.tokenMaker.(*mockQuerier)
+				maker, ok := server.tokenMaker.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				maker.
@@ -1297,7 +1170,7 @@ func TestLoginUser(t *testing.T) {
 				"password": password,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -1341,7 +1214,7 @@ func TestLoginUser(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			querier := new(mockQuerier)
+			querier := new(mocker.TestMocker)
 			config := configuration.NewYAMLConfiguration("../app.yaml", tc.env)
 			server := newServerWithConfigurator(querier, querier, config)
 			tc.mock(server)
@@ -1379,7 +1252,7 @@ func TestUserInfo(t *testing.T) {
 			env:      "test",
 			username: customerUser.Username,
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -1418,7 +1291,7 @@ func TestUserInfo(t *testing.T) {
 			env:      "test",
 			username: customerUser.Username,
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -1450,7 +1323,7 @@ func TestUserInfo(t *testing.T) {
 			env:      "test",
 			username: customerUser.Username,
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -1481,7 +1354,7 @@ func TestUserInfo(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			querier := new(mockQuerier)
+			querier := new(mocker.TestMocker)
 			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
@@ -1520,7 +1393,7 @@ func TestGetAllCustomer(t *testing.T) {
 				"limit":  6,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -1578,7 +1451,7 @@ func TestGetAllCustomer(t *testing.T) {
 				"limit1": 6,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -1612,7 +1485,7 @@ func TestGetAllCustomer(t *testing.T) {
 				"limit":  6,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -1647,7 +1520,7 @@ func TestGetAllCustomer(t *testing.T) {
 				"limit":  6,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -1682,7 +1555,7 @@ func TestGetAllCustomer(t *testing.T) {
 				"limit":  6,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -1713,7 +1586,7 @@ func TestGetAllCustomer(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			querier := new(mockQuerier)
+			querier := new(mocker.TestMocker)
 			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
@@ -1756,7 +1629,7 @@ func TestGetAllAdmin(t *testing.T) {
 				"limit":  6,
 			},
 			mock: func(server *Server) {
-				querier, ok := server.store.(*mockQuerier)
+				querier, ok := server.store.(*mocker.TestMocker)
 				require.True(t, ok)
 
 				querier.
@@ -1810,7 +1683,7 @@ func TestGetAllAdmin(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			querier := new(mockQuerier)
+			querier := new(mocker.TestMocker)
 			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
