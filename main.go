@@ -17,7 +17,8 @@ import (
 )
 
 func main() {
-	yamlConfig := configuration.NewYAMLConfiguration("app.yaml", "dev")
+	env := os.Getenv("POSADA_ENV")
+	yamlConfig := configuration.NewYAMLConfiguration("app.yaml", env)
 
 	if yamlConfig.GetConfig().Name == "development" {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
@@ -47,7 +48,7 @@ func main() {
 func runDBMigration(migrationURL string, dbSource string) {
 	migration, err := migrate.New(migrationURL, dbSource)
 	if err != nil {
-		log.Fatal().Msg("cannot create new migrate instance")
+		log.Fatal().Msg("cannot create new migrate instances")
 	}
 
 	if err := migration.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {

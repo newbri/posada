@@ -30,7 +30,7 @@ config:
     prod:
         name: production
         db_driver: postgres
-        db_source: postgresql://root:secret@localhost:5432/posada?sslmode=disable
+        db_source: postgresql://root:secret@postgres:5432/posada?sslmode=disable
         migration_url: file://db/migration
         http_server_address: 0.0.0.0:8080
         http_redis_address: 0.0.0.0:6379
