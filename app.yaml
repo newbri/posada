@@ -13,6 +13,9 @@ config:
         authorization_header_key: authorization
         authorization_type_bearer: bearer
         authorization_payload_key: authorization_payload
+        access_control_allow_origin: http://localhost:5173
+        access_control_allow_headers: Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With
+        access_control_allow_methods: POST, OPTIONS, GET, PUT, DELETE
     test:
         name: test
         db_driver: postgres
@@ -27,6 +30,9 @@ config:
         authorization_header_key: authorization
         authorization_type_bearer: bearer
         authorization_payload_key: authorization_payload
+        access_control_allow_origin: http://localhost:5173
+        access_control_allow_headers: Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With
+        access_control_allow_methods: POST, OPTIONS, GET, PUT, DELETE
     prod:
         name: production
         db_driver: postgres
@@ -41,3 +47,6 @@ config:
         authorization_header_key: authorization
         authorization_type_bearer: bearer
         authorization_payload_key: authorization_payload
+        access_control_allow_origin: http://localhost:5173
+        access_control_allow_headers: Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With
+        access_control_allow_methods: POST, OPTIONS, GET, PUT, DELETE

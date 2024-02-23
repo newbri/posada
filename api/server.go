@@ -23,7 +23,7 @@ func NewServer(store db.Store, tokenMaker token.Maker, config configuration.Conf
 
 func (server *Server) setupRouter() {
 	router := gin.Default()
-	router.Use(CORSMiddleware(), errorHandlingMiddleware())
+	router.Use(CORSMiddleware(server), errorHandlingMiddleware())
 
 	apiGroup := router.Group("/api")
 
