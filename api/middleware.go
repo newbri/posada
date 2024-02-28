@@ -135,8 +135,8 @@ func CORSMiddleware(server *Server) gin.HandlerFunc {
 		c.Writer.Header().Set("Access-Control-Allow-Headers", server.config.GetConfig().AccessControlAllowHeaders)
 		c.Writer.Header().Set("Access-Control-Allow-Methods", server.config.GetConfig().AccessControlAllowMethods)
 
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusNoContent)
 			return
 		}
 
