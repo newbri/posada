@@ -38,6 +38,13 @@ func (server *Server) setupRouter() {
 	customerGroup.Use(pasetoAuthRole(server, db.RoleCustomer))
 	customerGroup.GET("/users/info", server.getUserInfo)
 	customerGroup.PUT("/users", server.updateUser)
+	/**
+	GET /users
+	GET /users/:user
+	POST /users
+	POST/PUT /users/:user
+	DELETE /users/:user
+	*/
 
 	// admin
 	adminGroup := authGroup.Group("/admin")
