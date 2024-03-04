@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"time"
 )
 
@@ -22,7 +23,7 @@ type CreateUserParams struct {
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error) {
-	row := q.db.QueryRowContext(ctx, insertUserQuery,
+	row := q.conn.QueryRow(ctx, insertUserQuery,
 		arg.Username,
 		arg.HashedPassword,
 		arg.FullName,
@@ -55,7 +56,7 @@ FROM users WHERE username = $1 AND is_deleted = $2;
 `
 
 func (q *Queries) GetUser(ctx context.Context, username string) (*User, error) {
-	row := q.db.QueryRowContext(ctx, getUserQuery, username, false)
+	row := q.conn.QueryRow(ctx, getUserQuery, username, false)
 	var user User
 	var role Role
 	err := row.Scan(
@@ -111,7 +112,7 @@ RETURNING username, hashed_password, full_name, email, password_changed_at, crea
 `
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (*User, error) {
-	row := q.db.QueryRowContext(ctx, updateUserQuery,
+	row := q.conn.QueryRow(ctx, updateUserQuery,
 		arg.HashedPassword,
 		arg.PasswordChangedAt,
 		arg.FullName,
@@ -143,7 +144,7 @@ const deleteUserQuery = `UPDATE users SET is_deleted = $1, deleted_at = $2 WHERE
      RETURNING username, hashed_password, full_name, email, password_changed_at, created_at, role_id, is_deleted, deleted_at;`
 
 func (q *Queries) DeleteUser(ctx context.Context, username string, deletedAt time.Time) (*User, error) {
-	row := q.db.QueryRowContext(ctx, deleteUserQuery, true, deletedAt, username, false)
+	row := q.conn.QueryRow(ctx, deleteUserQuery, true, deletedAt, username, false)
 	var user User
 	var role Role
 	err := row.Scan(
@@ -165,12 +166,9 @@ func (q *Queries) DeleteUser(ctx context.Context, username string, deletedAt tim
 }
 
 func (q *Queries) getUsersByRole(ctx context.Context, query string, role string, isDeleted bool, arg ListUsersParams) ([]*User, error) {
-	rows, err := q.db.QueryContext(ctx, query, role, isDeleted, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer func(rows *sql.Rows) {
-		_ = rows.Close()
+	rows, err := q.conn.Query(ctx, query, role, isDeleted, arg.Limit, arg.Offset)
+	defer func(rows pgx.Rows) {
+		rows.Close()
 	}(rows)
 
 	var items []*User

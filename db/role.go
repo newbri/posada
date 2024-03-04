@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"time"
 )
 
@@ -25,7 +26,7 @@ type CreateRoleParams struct {
 }
 
 func (q *Queries) CreateRole(ctx context.Context, arg CreateRoleParams) (*Role, error) {
-	row := q.db.QueryRowContext(
+	row := q.conn.QueryRow(
 		ctx,
 		createRoleQuery,
 		arg.Name,
@@ -53,12 +54,12 @@ SELECT internal_id,name,description,external_id,created_at,updated_at FROM role 
 `
 
 func (q *Queries) GetAllRole(ctx context.Context, arg ListRoleParams) ([]*Role, error) {
-	rows, err := q.db.QueryContext(ctx, getAllRoleQuery, arg.Limit, arg.Offset)
+	rows, err := q.conn.Query(ctx, getAllRoleQuery, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
-	defer func(rows *sql.Rows) {
-		_ = rows.Close()
+	defer func(rows pgx.Rows) {
+		rows.Close()
 	}(rows)
 
 	var items []*Role
@@ -76,9 +77,6 @@ func (q *Queries) GetAllRole(ctx context.Context, arg ListRoleParams) ([]*Role, 
 		}
 		items = append(items, &role)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -90,7 +88,7 @@ const getRoleQuery = `
 `
 
 func (q *Queries) GetRole(ctx context.Context, externalId string) (*Role, error) {
-	row := q.db.QueryRowContext(ctx, getRoleQuery, externalId)
+	row := q.conn.QueryRow(ctx, getRoleQuery, externalId)
 	var role Role
 	err := row.Scan(
 		&role.InternalID,
@@ -107,7 +105,7 @@ const getRoleByNameQuery = `
 	SELECT internal_id,name,description,external_id,created_at,updated_at FROM role WHERE name = $1;`
 
 func (q *Queries) GetRoleByName(ctx context.Context, name string) (*Role, error) {
-	row := q.db.QueryRowContext(ctx, getRoleByNameQuery, name)
+	row := q.conn.QueryRow(ctx, getRoleByNameQuery, name)
 	var role Role
 	err := row.Scan(
 		&role.InternalID,
@@ -125,7 +123,7 @@ const getRoleByUUIDQuery = `
 `
 
 func (q *Queries) GetRoleByUUID(ctx context.Context, internalId uuid.UUID) (*Role, error) {
-	row := q.db.QueryRowContext(ctx, getRoleByUUIDQuery, internalId)
+	row := q.conn.QueryRow(ctx, getRoleByUUIDQuery, internalId)
 	var role Role
 	err := row.Scan(
 		&role.InternalID,
@@ -155,7 +153,7 @@ RETURNING internal_id, name, description, external_id, created_at, updated_at;
 `
 
 func (q *Queries) UpdateRole(ctx context.Context, arg UpdateRoleParams) (*Role, error) {
-	row := q.db.QueryRowContext(ctx, updateRoleQuery,
+	row := q.conn.QueryRow(ctx, updateRoleQuery,
 		arg.Name,
 		arg.Description,
 		arg.UpdateAt,
@@ -177,7 +175,7 @@ const deleteRoleQuery = `DELETE FROM role WHERE external_id = $1
      RETURNING internal_id, name, description, external_id, created_at, updated_at;`
 
 func (q *Queries) DeleteRole(ctx context.Context, externalID string) (*Role, error) {
-	row := q.db.QueryRowContext(ctx, deleteRoleQuery, externalID)
+	row := q.conn.QueryRow(ctx, deleteRoleQuery, externalID)
 	var role Role
 	err := row.Scan(
 		&role.InternalID,

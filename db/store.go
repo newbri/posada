@@ -1,6 +1,6 @@
 package db
 
-import "database/sql"
+import "github.com/jackc/pgx/v5"
 
 type Store interface {
 	Querier
@@ -10,6 +10,6 @@ type SQLStore struct {
 	*Queries
 }
 
-func NewStore(db *sql.DB) Store {
-	return &SQLStore{Queries: New(db)}
+func NewStore(conn *pgx.Conn) Store {
+	return &SQLStore{Queries: New(conn)}
 }

@@ -1,19 +1,21 @@
 package main
 
 import (
-	"database/sql"
+	"context"
 	"errors"
+	"github.com/jackc/pgx/v5"
+	"os"
+
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	_ "github.com/lib/pq"
+
 	"github.com/newbri/posadamissportia/api"
 	"github.com/newbri/posadamissportia/configuration"
 	"github.com/newbri/posadamissportia/db"
 	"github.com/newbri/posadamissportia/token"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"os"
 )
 
 func main() {
@@ -24,7 +26,7 @@ func main() {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
 
-	conn, err := sql.Open(yamlConfig.GetConfig().DBDriver, yamlConfig.GetConfig().DBSource)
+	conn, err := pgx.Connect(context.Background(), yamlConfig.GetConfig().DBSource)
 	if err != nil {
 		log.Fatal().Msg("could not connect to the database")
 	}

@@ -1,11 +1,13 @@
 package db
 
-import "database/sql"
+import (
+	"github.com/jackc/pgx/v5"
+)
 
 type Queries struct {
-	db *sql.DB
+	conn *pgx.Conn
 }
 
-func New(db *sql.DB) *Queries {
-	return &Queries{db: db}
+func New(conn *pgx.Conn) *Queries {
+	return &Queries{conn: conn}
 }
