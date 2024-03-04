@@ -4,10 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
 	"github.com/newbri/posadamissportia/db/util"
-	"github.com/rs/zerolog/log"
+	"github.com/pashagolub/pgxmock/v3"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"regexp"
@@ -52,16 +51,16 @@ func TestCreateUser(t *testing.T) {
 	expectedUser := createRandomUserWithRole(RoleCustomer, false)
 	testCases := []struct {
 		name          string
-		userQueryRows *sqlmock.Rows
-		roleQueryRows *sqlmock.Rows
-		mock          func(userQueryRows *sqlmock.Rows, roleQueryRows *sqlmock.Rows, arg *CreateUserParams, roleId uuid.UUID)
+		userQueryRows *pgxmock.Rows
+		roleQueryRows *pgxmock.Rows
+		mock          func(userQueryRows *pgxmock.Rows, roleQueryRows *pgxmock.Rows, arg *CreateUserParams, roleId uuid.UUID)
 		response      func(querier Querier, expectedUser *User, arg *CreateUserParams)
 	}{
 		{
 			name:          "OK",
 			userQueryRows: getMockedExpectedUserRows(expectedUser),
 			roleQueryRows: getMockedExpectedRoleRows(expectedUser.Role),
-			mock: func(userQueryRows *sqlmock.Rows, roleQueryRows *sqlmock.Rows, arg *CreateUserParams, roleId uuid.UUID) {
+			mock: func(userQueryRows *pgxmock.Rows, roleQueryRows *pgxmock.Rows, arg *CreateUserParams, roleId uuid.UUID) {
 				// the CreateUser sql mock
 				mocker.
 					ExpectQuery(regexp.QuoteMeta(insertUserQuery)).
@@ -91,7 +90,7 @@ func TestCreateUser(t *testing.T) {
 			name:          "Error",
 			userQueryRows: getMockedWrongExpectedUserRows(expectedUser),
 			roleQueryRows: getMockedExpectedRoleRows(expectedUser.Role),
-			mock: func(userQueryRows *sqlmock.Rows, roleQueryRows *sqlmock.Rows, arg *CreateUserParams, roleId uuid.UUID) {
+			mock: func(userQueryRows *pgxmock.Rows, roleQueryRows *pgxmock.Rows, arg *CreateUserParams, roleId uuid.UUID) {
 				// the CreateUser sql mock
 				mocker.
 					ExpectQuery(regexp.QuoteMeta(insertUserQuery)).
@@ -114,7 +113,7 @@ func TestCreateUser(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			mockQuery := &Queries{db: db}
+			mockQuery := &Queries{conn: db}
 
 			arg := createUserParams(expectedUser)
 			tc.mock(tc.userQueryRows, tc.roleQueryRows, arg, expectedUser.Role.InternalID)
@@ -127,16 +126,16 @@ func TestGetUser(t *testing.T) {
 	expectedUser := createRandomUserWithRole(RoleCustomer, false)
 	testCases := []struct {
 		name          string
-		userQueryRows *sqlmock.Rows
-		roleQueryRows *sqlmock.Rows
-		mock          func(userQueryRows *sqlmock.Rows, roleQueryRows *sqlmock.Rows, username string, roleId uuid.UUID, isDeleted bool)
+		userQueryRows *pgxmock.Rows
+		roleQueryRows *pgxmock.Rows
+		mock          func(userQueryRows *pgxmock.Rows, roleQueryRows *pgxmock.Rows, username string, roleId uuid.UUID, isDeleted bool)
 		response      func(querier Querier, expectedUser *User)
 	}{
 		{
 			name:          "OK",
 			userQueryRows: getMockedExpectedUserRows(expectedUser),
 			roleQueryRows: getMockedExpectedRoleRows(expectedUser.Role),
-			mock: func(userQueryRows *sqlmock.Rows, roleQueryRows *sqlmock.Rows, username string, roleId uuid.UUID, isDeleted bool) {
+			mock: func(userQueryRows *pgxmock.Rows, roleQueryRows *pgxmock.Rows, username string, roleId uuid.UUID, isDeleted bool) {
 
 				// the CreateUser sql mock
 				mocker.
@@ -160,7 +159,7 @@ func TestGetUser(t *testing.T) {
 			name:          "Error",
 			userQueryRows: getMockedWrongExpectedUserRows(expectedUser),
 			roleQueryRows: getMockedExpectedRoleRows(expectedUser.Role),
-			mock: func(userQueryRows *sqlmock.Rows, roleQueryRows *sqlmock.Rows, username string, roleId uuid.UUID, isDeleted bool) {
+			mock: func(userQueryRows *pgxmock.Rows, roleQueryRows *pgxmock.Rows, username string, roleId uuid.UUID, isDeleted bool) {
 
 				// the CreateUser sql mock
 				mocker.
@@ -178,7 +177,7 @@ func TestGetUser(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			mockQuery := &Queries{db: db}
+			mockQuery := &Queries{conn: db}
 
 			tc.mock(tc.userQueryRows, tc.roleQueryRows, expectedUser.Username, expectedUser.Role.InternalID, false)
 			tc.response(mockQuery, expectedUser)
@@ -190,10 +189,10 @@ func TestUpdateUser(t *testing.T) {
 	expectedUser := createRandomUserWithRole(RoleCustomer, false)
 	testCases := []struct {
 		name          string
-		userQueryRows *sqlmock.Rows
-		roleQueryRows *sqlmock.Rows
+		userQueryRows *pgxmock.Rows
+		roleQueryRows *pgxmock.Rows
 		arg           UpdateUserParams
-		mock          func(userQueryRows *sqlmock.Rows, roleQueryRows *sqlmock.Rows, arg UpdateUserParams, roleId uuid.UUID, isDeleted bool)
+		mock          func(userQueryRows *pgxmock.Rows, roleQueryRows *pgxmock.Rows, arg UpdateUserParams, roleId uuid.UUID, isDeleted bool)
 		response      func(querier Querier, arg UpdateUserParams)
 	}{
 		{
@@ -207,7 +206,7 @@ func TestUpdateUser(t *testing.T) {
 					Valid:  true,
 				},
 			},
-			mock: func(userQueryRows *sqlmock.Rows, roleQueryRows *sqlmock.Rows, arg UpdateUserParams, roleId uuid.UUID, isDeleted bool) {
+			mock: func(userQueryRows *pgxmock.Rows, roleQueryRows *pgxmock.Rows, arg UpdateUserParams, roleId uuid.UUID, isDeleted bool) {
 				// the CreateUser sql mock
 				mocker.
 					ExpectQuery(regexp.QuoteMeta(updateUserQuery)).
@@ -237,7 +236,7 @@ func TestUpdateUser(t *testing.T) {
 					Valid:  true,
 				},
 			},
-			mock: func(userQueryRows *sqlmock.Rows, roleQueryRows *sqlmock.Rows, arg UpdateUserParams, roleId uuid.UUID, isDeleted bool) {
+			mock: func(userQueryRows *pgxmock.Rows, roleQueryRows *pgxmock.Rows, arg UpdateUserParams, roleId uuid.UUID, isDeleted bool) {
 				// the CreateUser sql mock
 				mocker.
 					ExpectQuery(regexp.QuoteMeta(updateUserQuery)).
@@ -267,7 +266,7 @@ func TestUpdateUser(t *testing.T) {
 					Valid:  true,
 				},
 			},
-			mock: func(userQueryRows *sqlmock.Rows, roleQueryRows *sqlmock.Rows, arg UpdateUserParams, roleId uuid.UUID, isDeleted bool) {
+			mock: func(userQueryRows *pgxmock.Rows, roleQueryRows *pgxmock.Rows, arg UpdateUserParams, roleId uuid.UUID, isDeleted bool) {
 				// the CreateUser sql mock
 				mocker.
 					ExpectQuery(regexp.QuoteMeta(updateUserQuery)).
@@ -284,7 +283,7 @@ func TestUpdateUser(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			mockQuery := &Queries{db: db}
+			mockQuery := &Queries{conn: db}
 
 			tc.mock(tc.userQueryRows, tc.roleQueryRows, tc.arg, expectedUser.Role.InternalID, false)
 			tc.response(mockQuery, tc.arg)
@@ -296,16 +295,16 @@ func TestDeleteUser(t *testing.T) {
 	expectedUser := createRandomUserWithRole(RoleCustomer, false)
 	testCases := []struct {
 		name          string
-		userQueryRows *sqlmock.Rows
-		roleQueryRows *sqlmock.Rows
-		mock          func(userQueryRows *sqlmock.Rows, roleQueryRows *sqlmock.Rows, username string, t time.Time, roleId uuid.UUID, isDeleted bool)
+		userQueryRows *pgxmock.Rows
+		roleQueryRows *pgxmock.Rows
+		mock          func(userQueryRows *pgxmock.Rows, roleQueryRows *pgxmock.Rows, username string, t time.Time, roleId uuid.UUID, isDeleted bool)
 		response      func(querier Querier, deletedAt time.Time)
 	}{
 		{
 			name:          "OK FullName",
 			userQueryRows: getMockedExpectedUserRows(expectedUser),
 			roleQueryRows: getMockedExpectedRoleRows(expectedUser.Role),
-			mock: func(userQueryRows *sqlmock.Rows, roleQueryRows *sqlmock.Rows, username string, t time.Time, roleId uuid.UUID, isDeleted bool) {
+			mock: func(userQueryRows *pgxmock.Rows, roleQueryRows *pgxmock.Rows, username string, t time.Time, roleId uuid.UUID, isDeleted bool) {
 				// the CreateUser sql mock
 				mocker.
 					ExpectQuery(regexp.QuoteMeta(deleteUserQuery)).
@@ -327,7 +326,7 @@ func TestDeleteUser(t *testing.T) {
 			name:          "Error",
 			userQueryRows: getMockedWrongExpectedUserRows(expectedUser),
 			roleQueryRows: getMockedExpectedRoleRows(expectedUser.Role),
-			mock: func(userQueryRows *sqlmock.Rows, roleQueryRows *sqlmock.Rows, username string, t time.Time, roleId uuid.UUID, isDeleted bool) {
+			mock: func(userQueryRows *pgxmock.Rows, roleQueryRows *pgxmock.Rows, username string, t time.Time, roleId uuid.UUID, isDeleted bool) {
 				// the CreateUser sql mock
 				mocker.
 					ExpectQuery(regexp.QuoteMeta(deleteUserQuery)).
@@ -344,7 +343,7 @@ func TestDeleteUser(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			mockQuery := &Queries{db: db}
+			mockQuery := &Queries{conn: db}
 
 			deletedAt := time.Now()
 			tc.mock(tc.userQueryRows, tc.roleQueryRows, expectedUser.Username, deletedAt, expectedUser.Role.InternalID, false)
@@ -359,8 +358,8 @@ func TestGetAllCustomer(t *testing.T) {
 	testCases := []struct {
 		name          string
 		arg           ListUsersParams
-		userQueryRows *sqlmock.Rows
-		mock          func(userQueryRows *sqlmock.Rows, isDeleted bool, arg ListUsersParams)
+		userQueryRows *pgxmock.Rows
+		mock          func(userQueryRows *pgxmock.Rows, isDeleted bool, arg ListUsersParams)
 		response      func(querier Querier, arg ListUsersParams)
 	}{
 		{
@@ -370,7 +369,7 @@ func TestGetAllCustomer(t *testing.T) {
 				Offset: 1,
 			},
 			userQueryRows: getMultipleMockedExpectedUserRows(expectedUsers),
-			mock: func(userQueryRows *sqlmock.Rows, isDeleted bool, arg ListUsersParams) {
+			mock: func(userQueryRows *pgxmock.Rows, isDeleted bool, arg ListUsersParams) {
 				// mocking CreateUser
 				mocker.
 					ExpectQuery(regexp.QuoteMeta(getAllUserQuery)).
@@ -397,7 +396,7 @@ func TestGetAllCustomer(t *testing.T) {
 				Offset: 1,
 			},
 			userQueryRows: getMultipleMockedExpectedUserRows(expectedUsers),
-			mock: func(userQueryRows *sqlmock.Rows, isDeleted bool, arg ListUsersParams) {
+			mock: func(userQueryRows *pgxmock.Rows, isDeleted bool, arg ListUsersParams) {
 				// mocking CreateUser
 				mocker.
 					ExpectQuery(regexp.QuoteMeta(getAllUserQuery)).
@@ -417,7 +416,7 @@ func TestGetAllCustomer(t *testing.T) {
 				Offset: 1,
 			},
 			userQueryRows: getMultipleWrongMockedExpectedUserRows(expectedUsers),
-			mock: func(userQueryRows *sqlmock.Rows, isDeleted bool, arg ListUsersParams) {
+			mock: func(userQueryRows *pgxmock.Rows, isDeleted bool, arg ListUsersParams) {
 				// mocking CreateUser
 				mocker.
 					ExpectQuery(regexp.QuoteMeta(getAllUserQuery)).
@@ -437,7 +436,7 @@ func TestGetAllCustomer(t *testing.T) {
 				Offset: 1,
 			},
 			userQueryRows: getMultipleMockedExpectedUserRows(expectedUsers),
-			mock: func(userQueryRows *sqlmock.Rows, isDeleted bool, arg ListUsersParams) {
+			mock: func(userQueryRows *pgxmock.Rows, isDeleted bool, arg ListUsersParams) {
 				// mocking CreateUser
 				mocker.
 					ExpectQuery(regexp.QuoteMeta(getAllUserQuery)).
@@ -463,7 +462,7 @@ func TestGetAllCustomer(t *testing.T) {
 				Offset: 1,
 			},
 			userQueryRows: getMultipleMockedExpectedUserRows(expectedUsers),
-			mock: func(userQueryRows *sqlmock.Rows, isDeleted bool, arg ListUsersParams) {
+			mock: func(userQueryRows *pgxmock.Rows, isDeleted bool, arg ListUsersParams) {
 				// mocking CreateUser
 				mocker.
 					ExpectQuery(regexp.QuoteMeta(getAllUserQuery)).
@@ -487,19 +486,7 @@ func TestGetAllCustomer(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			var err error
-			db, mocker, err = sqlmock.New()
-			if err != nil {
-				log.Fatal().Msgf("an error '%s' was not expected when opening a stub database connection", err)
-			}
-			defer func(db *sql.DB) {
-				err := db.Close()
-				if err != nil {
-
-				}
-			}(db)
-
-			mockQuery := &Queries{db: db}
+			mockQuery := &Queries{conn: db}
 
 			tc.mock(tc.userQueryRows, false, tc.arg)
 			tc.response(mockQuery, tc.arg)
@@ -513,8 +500,8 @@ func TestGetAllAdmin(t *testing.T) {
 	testCases := []struct {
 		name          string
 		arg           ListUsersParams
-		userQueryRows *sqlmock.Rows
-		mock          func(userQueryRows *sqlmock.Rows, isDeleted bool, arg ListUsersParams)
+		userQueryRows *pgxmock.Rows
+		mock          func(userQueryRows *pgxmock.Rows, isDeleted bool, arg ListUsersParams)
 		response      func(querier Querier, arg ListUsersParams)
 	}{
 		{
@@ -524,7 +511,7 @@ func TestGetAllAdmin(t *testing.T) {
 				Offset: 1,
 			},
 			userQueryRows: getMultipleMockedExpectedUserRows(expectedUsers),
-			mock: func(userQueryRows *sqlmock.Rows, isDeleted bool, arg ListUsersParams) {
+			mock: func(userQueryRows *pgxmock.Rows, isDeleted bool, arg ListUsersParams) {
 				// mocking CreateUser
 				mocker.
 					ExpectQuery(regexp.QuoteMeta(getAllUserQuery)).
@@ -548,19 +535,7 @@ func TestGetAllAdmin(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			var err error
-			db, mocker, err = sqlmock.New()
-			if err != nil {
-				log.Fatal().Msgf("an error '%s' was not expected when opening a stub database connection", err)
-			}
-			defer func(db *sql.DB) {
-				err := db.Close()
-				if err != nil {
-
-				}
-			}(db)
-
-			mockQuery := &Queries{db: db}
+			mockQuery := &Queries{conn: db}
 
 			tc.mock(tc.userQueryRows, false, tc.arg)
 			tc.response(mockQuery, tc.arg)

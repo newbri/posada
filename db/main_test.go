@@ -1,33 +1,29 @@
 package db
 
 import (
-	"database/sql"
 	"fmt"
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	_ "github.com/lib/pq"
 	"github.com/newbri/posadamissportia/db/util"
-	"github.com/rs/zerolog/log"
+	"github.com/pashagolub/pgxmock/v3"
 	"os"
 	"testing"
 	"time"
 )
 
-var mocker sqlmock.Sqlmock
-var db *sql.DB
+var mocker pgxmock.PgxPoolIface
+var db *pgx.Conn
 
 func TestMain(m *testing.M) {
 	var err error
-	db, mocker, err = sqlmock.New()
+	mocker, err = pgxmock.NewPool()
 	if err != nil {
-		log.Fatal().Msgf("an error '%s' was not expected when opening a stub database connection", err)
+		fmt.Errorf(err.Error())
+		return
 	}
-	defer func(db *sql.DB) {
-		err := db.Close()
-		if err != nil {
-
-		}
-	}(db)
+	defer mocker.Close()
+	db = mocker.Conn()
 
 	os.Exit(m.Run())
 }
@@ -83,8 +79,8 @@ func createRole() *Role {
 	}
 }
 
-func getMockedExpectedUserRows(user *User) *sqlmock.Rows {
-	return sqlmock.NewRows([]string{"username", "hashed_password", "full_name", "email", "password_changed_at", "created_at", "role_id", "is_deleted", "deleted_at"}).
+func getMockedExpectedUserRows(user *User) *pgxmock.Rows {
+	return pgxmock.NewRows([]string{"username", "hashed_password", "full_name", "email", "password_changed_at", "created_at", "role_id", "is_deleted", "deleted_at"}).
 		AddRow(
 			&user.Username,
 			&user.HashedPassword,
@@ -98,8 +94,8 @@ func getMockedExpectedUserRows(user *User) *sqlmock.Rows {
 		)
 }
 
-func getMockedWrongExpectedUserRows(user *User) *sqlmock.Rows {
-	return sqlmock.NewRows([]string{"username", "hashed_password", "full_name", "email", "password_changed_at", "created_at", "role_id", "is_deleted"}).
+func getMockedWrongExpectedUserRows(user *User) *pgxmock.Rows {
+	return pgxmock.NewRows([]string{"username", "hashed_password", "full_name", "email", "password_changed_at", "created_at", "role_id", "is_deleted"}).
 		AddRow(
 			&user.Username,
 			&user.HashedPassword,
@@ -112,8 +108,8 @@ func getMockedWrongExpectedUserRows(user *User) *sqlmock.Rows {
 		)
 }
 
-func getMockedExpectedRoleRows(role *Role) *sqlmock.Rows {
-	return sqlmock.NewRows([]string{"internal_id", "name", "description", "external_id", "updated_at", "created_at"}).
+func getMockedExpectedRoleRows(role *Role) *pgxmock.Rows {
+	return pgxmock.NewRows([]string{"internal_id", "name", "description", "external_id", "updated_at", "created_at"}).
 		AddRow(
 			&role.InternalID,
 			&role.Name,
@@ -124,8 +120,8 @@ func getMockedExpectedRoleRows(role *Role) *sqlmock.Rows {
 		)
 }
 
-func getMultipleMockedExpectedUserRows(users []*User) *sqlmock.Rows {
-	rowHeading := sqlmock.NewRows([]string{"username", "hashed_password", "full_name", "email", "password_changed_at", "created_at", "role_id", "is_deleted", "deleted_at"})
+func getMultipleMockedExpectedUserRows(users []*User) *pgxmock.Rows {
+	rowHeading := pgxmock.NewRows([]string{"username", "hashed_password", "full_name", "email", "password_changed_at", "created_at", "role_id", "is_deleted", "deleted_at"})
 	for _, user := range users {
 		rowHeading = rowHeading.AddRow(
 			&user.Username,
@@ -142,8 +138,8 @@ func getMultipleMockedExpectedUserRows(users []*User) *sqlmock.Rows {
 	return rowHeading
 }
 
-func getMultipleWrongMockedExpectedUserRows(users []*User) *sqlmock.Rows {
-	rowHeading := sqlmock.NewRows([]string{"username", "hashed_password", "full_name", "email", "password_changed_at", "created_at", "role_id", "is_deleted"})
+func getMultipleWrongMockedExpectedUserRows(users []*User) *pgxmock.Rows {
+	rowHeading := pgxmock.NewRows([]string{"username", "hashed_password", "full_name", "email", "password_changed_at", "created_at", "role_id", "is_deleted"})
 	for _, user := range users {
 		rowHeading = rowHeading.AddRow(
 			&user.Username,

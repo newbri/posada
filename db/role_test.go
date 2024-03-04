@@ -3,9 +3,9 @@ package db
 import (
 	"context"
 	"database/sql"
-	"database/sql/driver"
 	"fmt"
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/pashagolub/pgxmock/v3"
 	"regexp"
 	"testing"
 	"time"
@@ -15,17 +15,17 @@ import (
 
 // TestGetAllRole tests the GetAllRole function
 func TestGetAllRole(t *testing.T) {
-	db, mockDB, err := sqlmock.New()
-	require.NoError(t, err)
+	//db, mockDB, err := sqlmock.New()
+	//require.NoError(t, err)
 
 	updateDate := time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC)
 
-	defer func(db *sql.DB) {
-		_ = db.Close()
-	}(db)
+	//defer func(db *sql.DB) {
+	//	_ = db.Close()
+	//}(db)
 
 	// create an instance of our Queries struct.
-	q := New(db)
+	//q := New(db)
 
 	// specify the test cases.
 	tests := []struct {
@@ -39,7 +39,7 @@ func TestGetAllRole(t *testing.T) {
 			mock: func() {
 				role := createRole()
 				rows := getRow(role, updateDate)
-				setupMockBD(mockDB, getAllRoleQuery, rows, nil, 2, 0)
+				setupMockBD(db, getAllRoleQuery, rows, nil, 2, 0)
 			},
 			input:       ListRoleParams{Limit: 2, Offset: 0},
 			expectedErr: false,
@@ -196,7 +196,7 @@ func TestQueries_UpdateRole(t *testing.T) {
 	}
 }
 
-func setupMockBD(moc sqlmock.Sqlmock, query string, rows *sqlmock.Rows, err error, args ...driver.Value) {
+func setupMockBD(moc pgxmock.PgxPoolIface, query string, rows *pgxmock.Rows, err error, args ...any) {
 	if rows != nil {
 		moc.ExpectQuery(regexp.QuoteMeta(query)).WithArgs(args...).WillReturnRows(rows).WillReturnError(err)
 	} else {
