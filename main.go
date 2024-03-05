@@ -6,7 +6,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	_ "github.com/lib/pq"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/newbri/posadamissportia/api"
 	"github.com/newbri/posadamissportia/configuration"
 	"github.com/newbri/posadamissportia/db"

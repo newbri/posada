@@ -50,8 +50,11 @@ func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*User,
 }
 
 const getUserQuery = `
-SELECT username, hashed_password, full_name, email, password_changed_at, created_at, role_id, is_deleted, deleted_at 
-FROM users WHERE username = $1 AND is_deleted = $2;
+SELECT username, hashed_password, full_name, email, password_changed_at,
+       users.created_at, is_deleted, deleted_at,
+       p.internal_id, p.name, p.description, p.external_id, p.created_at, p.updated_at
+FROM users FULL OUTER JOIN role p ON users.role_id = p.internal_id 
+WHERE username = $1 AND is_deleted = $2;
 `
 
 func (q *Queries) GetUser(ctx context.Context, username string) (*User, error) {
@@ -65,14 +68,20 @@ func (q *Queries) GetUser(ctx context.Context, username string) (*User, error) {
 		&user.Email,
 		&user.PasswordChangedAt,
 		&user.CreatedAt,
-		&role.InternalID,
 		&user.IsDeleted,
 		&user.DeletedAt,
+		&role.InternalID,
+		&role.Name,
+		&role.Description,
+		&role.ExternalID,
+		&role.CreatedAt,
+		&role.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
 	}
-	user.Role, err = q.GetRoleByUUID(ctx, role.InternalID)
+	user.Role = &role
+	//user.Role, err = q.GetRoleByUUID(ctx, role.InternalID)
 	return &user, err
 }
 
