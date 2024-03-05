@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"errors"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"os"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -26,14 +26,14 @@ func main() {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
 
-	conn, err := pgx.Connect(context.Background(), yamlConfig.GetConfig().DBSource)
+	pool, err := pgxpool.New(context.Background(), yamlConfig.GetConfig().DBSource)
 	if err != nil {
 		log.Fatal().Msg("could not connect to the database")
 	}
 
 	runDBMigration(yamlConfig.GetConfig().MigrationURL, yamlConfig.GetConfig().DBSource)
 
-	store := db.NewStore(conn)
+	store := db.NewStore(pool)
 
 	tokenMaker, err := token.NewPasetoMaker(yamlConfig.GetConfig().TokenSymmetricKey)
 	if err != nil {

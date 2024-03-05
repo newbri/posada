@@ -23,7 +23,7 @@ type CreateUserParams struct {
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error) {
-	row := q.conn.QueryRow(ctx, insertUserQuery,
+	row := q.pool.QueryRow(ctx, insertUserQuery,
 		arg.Username,
 		arg.HashedPassword,
 		arg.FullName,
@@ -51,12 +51,15 @@ func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*User,
 }
 
 const getUserQuery = `
-SELECT username, hashed_password, full_name, email, password_changed_at, created_at, role_id, is_deleted, deleted_at 
-FROM users WHERE username = $1 AND is_deleted = $2;
+SELECT username, hashed_password, full_name, email, password_changed_at,
+       users.created_at, is_deleted, deleted_at,
+       p.internal_id, p.name, p.description, p.external_id, p.created_at, p.updated_at
+FROM users FULL OUTER JOIN role p ON users.role_id = p.internal_id 
+WHERE username = $1 AND is_deleted = $2;
 `
 
 func (q *Queries) GetUser(ctx context.Context, username string) (*User, error) {
-	row := q.conn.QueryRow(ctx, getUserQuery, username, false)
+	row := q.pool.QueryRow(ctx, getUserQuery, username, false)
 	var user User
 	var role Role
 	err := row.Scan(
@@ -66,14 +69,20 @@ func (q *Queries) GetUser(ctx context.Context, username string) (*User, error) {
 		&user.Email,
 		&user.PasswordChangedAt,
 		&user.CreatedAt,
-		&role.InternalID,
 		&user.IsDeleted,
 		&user.DeletedAt,
+		&role.InternalID,
+		&role.Name,
+		&role.Description,
+		&role.ExternalID,
+		&role.CreatedAt,
+		&role.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
 	}
-	user.Role, err = q.GetRoleByUUID(ctx, role.InternalID)
+
+	user.Role = &role
 	return &user, err
 }
 
@@ -112,7 +121,7 @@ RETURNING username, hashed_password, full_name, email, password_changed_at, crea
 `
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (*User, error) {
-	row := q.conn.QueryRow(ctx, updateUserQuery,
+	row := q.pool.QueryRow(ctx, updateUserQuery,
 		arg.HashedPassword,
 		arg.PasswordChangedAt,
 		arg.FullName,
@@ -144,7 +153,7 @@ const deleteUserQuery = `UPDATE users SET is_deleted = $1, deleted_at = $2 WHERE
      RETURNING username, hashed_password, full_name, email, password_changed_at, created_at, role_id, is_deleted, deleted_at;`
 
 func (q *Queries) DeleteUser(ctx context.Context, username string, deletedAt time.Time) (*User, error) {
-	row := q.conn.QueryRow(ctx, deleteUserQuery, true, deletedAt, username, false)
+	row := q.pool.QueryRow(ctx, deleteUserQuery, true, deletedAt, username, false)
 	var user User
 	var role Role
 	err := row.Scan(
@@ -166,7 +175,7 @@ func (q *Queries) DeleteUser(ctx context.Context, username string, deletedAt tim
 }
 
 func (q *Queries) getUsersByRole(ctx context.Context, query string, role string, isDeleted bool, arg ListUsersParams) ([]*User, error) {
-	rows, err := q.conn.Query(ctx, query, role, isDeleted, arg.Limit, arg.Offset)
+	rows, err := q.pool.Query(ctx, query, role, isDeleted, arg.Limit, arg.Offset)
 	defer func(rows pgx.Rows) {
 		rows.Close()
 	}(rows)

@@ -31,7 +31,7 @@ type CreateSessionParams struct {
 }
 
 func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (*Session, error) {
-	row := q.conn.QueryRow(ctx, createSessionQuery,
+	row := q.pool.QueryRow(ctx, createSessionQuery,
 		arg.ID,
 		arg.Username,
 		arg.RefreshToken,
@@ -64,7 +64,7 @@ LIMIT 1
 `
 
 func (q *Queries) GetSession(ctx context.Context, id uuid.UUID) (*Session, error) {
-	row := q.conn.QueryRow(ctx, getSessionQuery, id)
+	row := q.pool.QueryRow(ctx, getSessionQuery, id)
 	var session Session
 	err := row.Scan(
 		&session.ID,
@@ -83,7 +83,7 @@ func (q *Queries) GetSession(ctx context.Context, id uuid.UUID) (*Session, error
 const blockSessionQuery = `UPDATE sessions SET is_blocked = $1, blocked_at = $2 WHERE id = $3;`
 
 func (q *Queries) BlockSession(ctx context.Context, sessionID uuid.UUID) (*Session, error) {
-	_, err := q.conn.Exec(ctx, blockSessionQuery, true, time.Now(), sessionID)
+	_, err := q.pool.Exec(ctx, blockSessionQuery, true, time.Now(), sessionID)
 	if err != nil {
 		return nil, err
 	}

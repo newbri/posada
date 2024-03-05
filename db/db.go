@@ -1,13 +1,13 @@
 package db
 
 import (
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Queries struct {
-	conn *pgx.Conn
+	pool *pgxpool.Pool
 }
 
-func New(conn *pgx.Conn) *Queries {
-	return &Queries{conn: conn}
+func New(pool *pgxpool.Pool) *Queries {
+	return &Queries{pool: pool}
 }
