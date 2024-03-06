@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 	"time"
 )
 
@@ -58,9 +57,7 @@ func (q *Queries) GetAllRole(ctx context.Context, arg ListRoleParams) ([]*Role, 
 	if err != nil {
 		return nil, err
 	}
-	defer func(rows pgx.Rows) {
-		rows.Close()
-	}(rows)
+	defer rows.Close()
 
 	var items []*Role
 	for rows.Next() {

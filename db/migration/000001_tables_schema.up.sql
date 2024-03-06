@@ -108,6 +108,34 @@ $$
     LANGUAGE plpgsql
     SECURITY DEFINER;
 
+
+CREATE OR REPLACE FUNCTION get_posada_user(p_username TEXT, p_is_deleted BOOLEAN)
+    RETURNS table (j jsonb) AS
+$$
+BEGIN
+        RETURN QUERY  SELECT to_jsonb(a) FROM (SELECT username,
+                                                      hashed_password,
+                                                      full_name,
+                                                      email,
+                                                      password_changed_at,
+                                                      users.created_at,
+                                                      is_deleted,
+                                                      deleted_at,
+                                                      jsonb_build_object(
+                                                        'internal_id', p.internal_id,
+                                                        'name', p.name,
+                                                        'description', p.description,
+                                                        'external_id', p.external_id,
+                                                        'created_at', p.created_at,
+                                                        'updated_at', p.updated_at
+                                                      ) AS role
+                                                  FROM users FULL OUTER JOIN role p ON users.role_id = p.internal_id
+                                                  WHERE username = p_username AND is_deleted = p_is_deleted) a;
+END;
+$$
+    LANGUAGE plpgsql
+    SECURITY DEFINER;
+
 SELECT create_user('su', '$2a$10$ovvoX8WckUAZTEhRLfIWKOcwcp2qeAvNZoAIXrE5ve1PccMGZpSDa', 'Super User',
                    'su@anewball.com', 'su');
 

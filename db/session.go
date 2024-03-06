@@ -64,9 +64,13 @@ LIMIT 1
 `
 
 func (q *Queries) GetSession(ctx context.Context, id uuid.UUID) (*Session, error) {
-	row := q.pool.QueryRow(ctx, getSessionQuery, id)
+	row, err := q.pool.Query(ctx, getSessionQuery, id)
+	if err != nil {
+		return nil, err
+	}
+
 	var session Session
-	err := row.Scan(
+	err = row.Scan(
 		&session.ID,
 		&session.Username,
 		&session.RefreshToken,

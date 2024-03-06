@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 	"time"
 )
 
@@ -59,8 +58,8 @@ WHERE username = $1 AND is_deleted = $2;
 `
 
 func (q *Queries) GetUser(ctx context.Context, username string) (*User, error) {
-	row := q.pool.QueryRow(ctx, getUserQuery, username, false)
 	var user User
+	row := q.pool.QueryRow(ctx, getUserQuery, username, false)
 	var role Role
 	err := row.Scan(
 		&user.Username,
@@ -121,7 +120,7 @@ RETURNING username, hashed_password, full_name, email, password_changed_at, crea
 `
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (*User, error) {
-	row := q.pool.QueryRow(ctx, updateUserQuery,
+	row, err := q.pool.Query(ctx, updateUserQuery,
 		arg.HashedPassword,
 		arg.PasswordChangedAt,
 		arg.FullName,
@@ -129,9 +128,13 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (*User, 
 		arg.Username,
 		false,
 	)
+	if err != nil {
+		return nil, err
+	}
+
 	var user User
 	var role Role
-	err := row.Scan(
+	err = row.Scan(
 		&user.Username,
 		&user.HashedPassword,
 		&user.FullName,
@@ -176,9 +179,10 @@ func (q *Queries) DeleteUser(ctx context.Context, username string, deletedAt tim
 
 func (q *Queries) getUsersByRole(ctx context.Context, query string, role string, isDeleted bool, arg ListUsersParams) ([]*User, error) {
 	rows, err := q.pool.Query(ctx, query, role, isDeleted, arg.Limit, arg.Offset)
-	defer func(rows pgx.Rows) {
-		rows.Close()
-	}(rows)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
 	var items []*User
 	for rows.Next() {

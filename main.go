@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/newbri/posadamissportia/db"
 	"os"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/newbri/posadamissportia/api"
 	"github.com/newbri/posadamissportia/configuration"
-	"github.com/newbri/posadamissportia/db"
 	"github.com/newbri/posadamissportia/token"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -30,6 +30,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Msg("could not connect to the database")
 	}
+	defer pool.Close()
 
 	runDBMigration(yamlConfig.GetConfig().MigrationURL, yamlConfig.GetConfig().DBSource)
 
