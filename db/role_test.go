@@ -135,6 +135,15 @@ func TestQueries_GetRole(t *testing.T) {
 }
 
 func TestQueries_UpdateRole(t *testing.T) {
+	db, mocker, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func(db *sql.DB) {
+		err := db.Close()
+		if err != nil {
+
+		}
+	}(db)
+
 	ctx := context.Background()
 	q := New(db)
 

@@ -1,34 +1,17 @@
 package db
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
-	_ "github.com/lib/pq"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/newbri/posadamissportia/db/util"
-	"github.com/rs/zerolog/log"
 	"os"
 	"testing"
 	"time"
 )
 
-var mocker sqlmock.Sqlmock
-var db *sql.DB
-
 func TestMain(m *testing.M) {
-	var err error
-	db, mocker, err = sqlmock.New()
-	if err != nil {
-		log.Fatal().Msgf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer func(db *sql.DB) {
-		err := db.Close()
-		if err != nil {
-
-		}
-	}(db)
-
 	os.Exit(m.Run())
 }
 
@@ -84,6 +67,41 @@ func createRole() *Role {
 }
 
 func getMockedExpectedUserRows(user *User) *sqlmock.Rows {
+	return sqlmock.NewRows([]string{"username", "hashed_password", "full_name", "email", "password_changed_at", "users.created_at", "is_deleted", "deleted_at", "p.internal_id", "p.name", "p.description", "p.external_id", "p.created_at", "p.updated_at"}).
+		AddRow(
+			&user.Username,
+			&user.HashedPassword,
+			&user.FullName,
+			&user.Email,
+			&user.PasswordChangedAt,
+			&user.CreatedAt,
+			&user.IsDeleted,
+			&user.DeletedAt,
+			&user.Role.InternalID,
+			&user.Role.Name,
+			&user.Role.Description,
+			&user.Role.ExternalID,
+			&user.Role.CreatedAt,
+			&user.Role.UpdatedAt,
+		)
+}
+
+func getMockedExpectedCreateUserRows(user *User) *sqlmock.Rows {
+	return sqlmock.NewRows([]string{"username", "hashed_password", "full_name", "email", "password_changed_at", "created_at", "role_id", "is_deleted", "deleted_at"}).
+		AddRow(
+			&user.Username,
+			&user.HashedPassword,
+			&user.FullName,
+			&user.Email,
+			&user.PasswordChangedAt,
+			&user.CreatedAt,
+			&user.Role.InternalID,
+			&user.IsDeleted,
+			&user.DeletedAt,
+		)
+}
+
+func getMockedExpectedUpdateUserRows(user *User) *sqlmock.Rows {
 	return sqlmock.NewRows([]string{"username", "hashed_password", "full_name", "email", "password_changed_at", "created_at", "role_id", "is_deleted", "deleted_at"}).
 		AddRow(
 			&user.Username,
