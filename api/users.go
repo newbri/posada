@@ -16,21 +16,20 @@ import (
 	"time"
 )
 
-type createUserRequest struct {
-	Username string `json:"username" binding:"required,alphanum"`
-	Password string `json:"password" binding:"required,min=6"`
-	FullName string `json:"full_name" binding:"required"`
-	Email    string `json:"email" binding:"required,email"`
-}
-
 func (server *Server) createUser(ctx *gin.Context) {
-	var req createUserRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
+	var request struct {
+		Username string `json:"username" binding:"required,alphanum"`
+		Password string `json:"password" binding:"required,min=6"`
+		FullName string `json:"full_name" binding:"required"`
+		Email    string `json:"email" binding:"required,email"`
+	}
+
+	if err := ctx.ShouldBindJSON(&request); err != nil {
 		log.Info().Msg(ctx.Error(err).Error())
 		return
 	}
 
-	hashedPassword, err := util.HashPassword(req.Password)
+	hashedPassword, err := util.HashPassword(request.Password)
 	if err != nil {
 		log.Info().Msg(ctx.Error(ErrInternalServer).Error())
 		return
@@ -44,10 +43,10 @@ func (server *Server) createUser(ctx *gin.Context) {
 	}
 
 	arg := &db.CreateUserParams{
-		Username:       req.Username,
+		Username:       request.Username,
 		HashedPassword: hashedPassword,
-		FullName:       req.FullName,
-		Email:          req.Email,
+		FullName:       request.FullName,
+		Email:          request.Email,
 		RoleID:         role.InternalID,
 	}
 
@@ -94,15 +93,14 @@ func (server *Server) getUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-type updateUserRequest struct {
-	Username string `json:"username" binding:"required,alphanum"`
-	Password string `json:"password" binding:"omitempty,min=6"`
-	FullName string `json:"full_name" binding:"omitempty"`
-	Email    string `json:"email" binding:"omitempty,email"`
-}
-
 func (server *Server) updateUser(ctx *gin.Context) {
-	var request updateUserRequest
+	var request struct {
+		Username string `json:"username" binding:"required,alphanum"`
+		Password string `json:"password" binding:"omitempty,min=6"`
+		FullName string `json:"full_name" binding:"omitempty"`
+		Email    string `json:"email" binding:"omitempty,email"`
+	}
+
 	if err := ctx.ShouldBindJSON(&request); err != nil {
 		log.Info().Msg(ctx.Error(err).Error())
 		return
@@ -194,22 +192,12 @@ func (server *Server) deleteUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-type loginUserRequest struct {
-	Username string `json:"username" binding:"required,alphanum"`
-	Password string `json:"password" binding:"required,min=6"`
-}
-
-type loginUserResponse struct {
-	SessionID             uuid.UUID    `json:"session_id"`
-	AccessToken           string       `json:"access_token"`
-	AccessTokenExpiresAt  time.Time    `json:"access_token_expires_at"`
-	RefreshToken          string       `json:"refresh_token"`
-	RefreshTokenExpiresAt time.Time    `json:"refresh_token_expires_at"`
-	User                  userResponse `json:"user"`
-}
-
 func (server *Server) loginUser(ctx *gin.Context) {
-	var request loginUserRequest
+	var request struct {
+		Username string `json:"username" binding:"required,alphanum"`
+		Password string `json:"password" binding:"required,min=6"`
+	}
+
 	if err := ctx.ShouldBindJSON(&request); err != nil {
 		log.Info().Msg(ctx.Error(err).Error())
 		return
@@ -267,14 +255,22 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		return
 	}
 
-	response := loginUserResponse{
-		SessionID:             session.ID,
-		AccessToken:           accessToken,
-		AccessTokenExpiresAt:  accessPayload.ExpiredAt,
-		RefreshToken:          refreshToken,
-		RefreshTokenExpiresAt: refreshPayload.ExpiredAt,
-		User:                  newUserResponse(user),
+	var response struct {
+		SessionID             uuid.UUID    `json:"session_id"`
+		AccessToken           string       `json:"access_token"`
+		AccessTokenExpiresAt  time.Time    `json:"access_token_expires_at"`
+		RefreshToken          string       `json:"refresh_token"`
+		RefreshTokenExpiresAt time.Time    `json:"refresh_token_expires_at"`
+		User                  userResponse `json:"user"`
 	}
+
+	response.SessionID = session.ID
+	response.AccessToken = accessToken
+	response.AccessTokenExpiresAt = accessPayload.ExpiredAt
+	response.RefreshToken = refreshToken
+	response.RefreshTokenExpiresAt = refreshPayload.ExpiredAt
+	response.User = newUserResponse(user)
+
 	ctx.JSON(http.StatusOK, response)
 }
 
