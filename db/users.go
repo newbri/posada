@@ -81,7 +81,7 @@ func (q *Queries) GetUser(ctx context.Context, username string) (*User, error) {
 		return nil, err
 	}
 	user.Role = &role
-	//user.Role, err = q.GetRoleByUUID(ctx, role.InternalID)
+
 	return &user, err
 }
 
