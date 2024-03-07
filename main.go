@@ -2,14 +2,14 @@ package main
 
 import (
 	"database/sql"
-	"errors"
-	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/joho/godotenv"
 	"github.com/newbri/posadamissportia/api"
 	"github.com/newbri/posadamissportia/configuration"
 	"github.com/newbri/posadamissportia/db"
+	"github.com/newbri/posadamissportia/db/util"
 	"github.com/newbri/posadamissportia/token"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -17,6 +17,11 @@ import (
 )
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal().Msg("Error loading .env file")
+	}
+
 	env := os.Getenv("POSADA_ENV")
 	yamlConfig := configuration.NewYAMLConfiguration("app.yaml", env)
 
@@ -29,7 +34,7 @@ func main() {
 		log.Fatal().Msg("could not connect to the database")
 	}
 
-	runDBMigration(yamlConfig.GetConfig().MigrationURL, yamlConfig.GetConfig().DBSource)
+	util.RunDBMigration(yamlConfig.GetConfig().MigrationURL, yamlConfig.GetConfig().DBSource)
 
 	store := db.NewStore(conn)
 
@@ -43,17 +48,4 @@ func main() {
 	if err != nil {
 		log.Fatal().Msg("cannot start server")
 	}
-}
-
-func runDBMigration(migrationURL string, dbSource string) {
-	migration, err := migrate.New(migrationURL, dbSource)
-	if err != nil {
-		log.Fatal().Msg("cannot create new migrate instances")
-	}
-
-	if err := migration.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		log.Fatal().Msg("failed to run migration up")
-	}
-
-	log.Info().Msg("db migration successfully")
 }
