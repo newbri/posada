@@ -268,144 +268,89 @@ func TestAuthMiddleware(t *testing.T) {
 	}
 }
 
-//func TestPasetoAuthRole(t *testing.T) {
-//	randomCustomer := createRandomUser(db.RoleCustomer, false)
-//	testCases := []struct {
-//		name     string
-//		username string
-//		env      string
-//		body     gin.H
-//		mock     func(server *Server)
-//		response func(recorder *httptest.ResponseRecorder)
-//		auth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
-//	}{
-//		{
-//			name:     "NoAuthorizationPayloadKey",
-//			env:      "test",
-//			username: randomCustomer.Username,
-//			mock: func(server *Server) {
-//				querier, ok := server.store.(*mocker.TestMocker)
-//				require.True(t, ok)
-//
-//				querier.
-//					On("GetUser", mock.Anything, mock.Anything).
-//					Return(randomCustomer, nil)
-//
-//				refreshToken, payload, err := createRandomToken(
-//					randomCustomer.Username,
-//					db.RoleCustomer,
-//				)
-//				require.NoError(t, err)
-//
-//				querier.
-//					On("CreateToken", mock.Anything, mock.Anything, mock.Anything).
-//					Return(refreshToken, payload, nil)
-//
-//				querier.
-//					On("VerifyToken", mock.Anything).
-//					Return(payload, nil)
-//
-//				config1 := createConfiguration()
-//				config2 := createConfiguration()
-//
-//				querier.
-//					On("GetConfig").
-//					Times(1).
-//					Return(config1)
-//
-//				config2.AuthorizationPayloadKey = "wrong"
-//
-//				querier.
-//					On("GetConfig").
-//					Times(2).
-//					Return(config2)
-//			},
-//			response: func(recorder *httptest.ResponseRecorder) {
-//				require.Equal(t, http.StatusUnauthorized, recorder.Code)
-//			},
-//			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-//				addAuthorization(t,
-//					request,
-//					tokenMaker,
-//					authorizationTypeBearer,
-//					randomCustomer.Username,
-//					randomCustomer.Role,
-//					time.Minute,
-//				)
-//			},
-//		},
-//		{
-//			name:     "WrongPayload",
-//			env:      "test",
-//			username: randomCustomer.Username,
-//			mock: func(server *Server) {
-//				querier, ok := server.store.(*mocker.TestMocker)
-//				require.True(t, ok)
-//
-//				querier.
-//					On("GetUser", mock.Anything, mock.Anything).
-//					Times(1).
-//					Return(randomCustomer, nil)
-//
-//				refreshToken, payload, err := createRandomToken(
-//					randomCustomer.Username,
-//					db.RoleVisitor,
-//				)
-//				require.NoError(t, err)
-//
-//				querier.
-//					On("CreateToken", mock.Anything, mock.Anything, mock.Anything).
-//					Times(1).
-//					Return(refreshToken, payload, nil)
-//
-//				querier.
-//					On("VerifyToken", mock.Anything).
-//					Times(1).
-//					Return(payload, nil)
-//
-//				config1 := createConfiguration()
-//				config2 := createConfiguration()
-//
-//				querier.
-//					On("GetConfig").
-//					Times(2).
-//					Return(config1)
-//
-//				querier.
-//					On("GetConfig").
-//					Times(1).
-//					Return(config2)
-//			},
-//			response: func(recorder *httptest.ResponseRecorder) {
-//				require.Equal(t, http.StatusUnauthorized, recorder.Code)
-//			},
-//			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-//				addAuthorization(t,
-//					request,
-//					tokenMaker,
-//					authorizationTypeBearer,
-//					randomCustomer.Username,
-//					randomCustomer.Role,
-//					time.Minute,
-//				)
-//			},
-//		},
-//	}
-//
-//	for _, tc := range testCases {
-//		t.Run(tc.name, func(t *testing.T) {
-//			querier := new(mocker.TestMocker)
-//			server := newTestServer(querier, tc.env)
-//			tc.mock(server)
-//
-//			url := "/api/auth/customer/users/info"
-//			request, err := http.NewRequest(http.MethodGet, url, nil)
-//			require.NoError(t, err)
-//
-//			tc.auth(t, request, server.tokenMaker)
-//			recorder := httptest.NewRecorder()
-//			server.router.ServeHTTP(recorder, request)
-//			tc.response(recorder)
-//		})
-//	}
-//}
+func TestPasetoAuthRole(t *testing.T) {
+	randomCustomer := createRandomUser(db.RoleAdmin, false)
+	testCases := []struct {
+		name     string
+		username string
+		env      string
+		body     gin.H
+		mock     func(server *Server)
+		response func(recorder *httptest.ResponseRecorder)
+		auth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+	}{
+		{
+			name:     "WrongPayload",
+			env:      "test",
+			username: randomCustomer.Username,
+			mock: func(server *Server) {
+				querier, ok := server.store.(*mocker.TestMocker)
+				require.True(t, ok)
+
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
+					Times(1).
+					Return(randomCustomer, nil)
+
+				refreshToken, payload, err := createRandomToken(
+					randomCustomer.Username,
+					db.RoleCustomer,
+				)
+				require.NoError(t, err)
+
+				querier.
+					On("CreateToken", mock.Anything, mock.Anything, mock.Anything).
+					Times(1).
+					Return(refreshToken, payload, nil)
+
+				querier.
+					On("VerifyToken", mock.Anything).
+					Times(1).
+					Return(payload, nil)
+
+				config1 := createConfiguration()
+				config2 := createConfiguration()
+
+				querier.
+					On("GetConfig").
+					Times(2).
+					Return(config1)
+
+				querier.
+					On("GetConfig").
+					Times(1).
+					Return(config2)
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusUnauthorized, recorder.Code)
+			},
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					randomCustomer.Username,
+					randomCustomer.Role,
+					time.Minute,
+				)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			querier := new(mocker.TestMocker)
+			server := newTestServer(querier, tc.env)
+			tc.mock(server)
+
+			url := "/api/auth/customer/users/info"
+			request, err := http.NewRequest(http.MethodGet, url, nil)
+			require.NoError(t, err)
+
+			tc.auth(t, request, server.tokenMaker)
+			recorder := httptest.NewRecorder()
+			server.router.ServeHTTP(recorder, request)
+			tc.response(recorder)
+		})
+	}
+}
