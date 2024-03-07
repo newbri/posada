@@ -12,13 +12,12 @@ import (
 	"time"
 )
 
-type createRoleRequest struct {
-	Name        string `json:"name" binding:"required,alphanum"`
-	Description string `json:"description" binding:"required"`
-}
-
 func (server *Server) createRole(ctx *gin.Context) {
-	var request createRoleRequest
+	var request struct {
+		Name        string `json:"name" binding:"required,alphanum"`
+		Description string `json:"description" binding:"required"`
+	}
+
 	if err := ctx.ShouldBindJSON(&request); err != nil {
 		log.Info().Msg(ctx.Error(err).Error())
 		return
