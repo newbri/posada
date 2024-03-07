@@ -9,17 +9,11 @@ import (
 	"time"
 )
 
-type renewAccessTokenRequest struct {
-	RefreshToken string `json:"refresh_token" binding:"required"`
-}
-
-type renewAccessTokenResponse struct {
-	AccessToken          string    `json:"access_token"`
-	AccessTokenExpiresAt time.Time `json:"access_token_expires_at"`
-}
-
 func (server *Server) renewAccessToken(ctx *gin.Context) {
-	var request renewAccessTokenRequest
+	var request struct {
+		RefreshToken string `json:"refresh_token" binding:"required"`
+	}
+
 	if err := ctx.ShouldBindJSON(&request); err != nil {
 		log.Info().Msg(ctx.Error(err).Error())
 		return
@@ -71,9 +65,13 @@ func (server *Server) renewAccessToken(ctx *gin.Context) {
 		return
 	}
 
-	response := renewAccessTokenResponse{
-		AccessToken:          accessToken,
-		AccessTokenExpiresAt: accessPayload.ExpiredAt,
+	var response struct {
+		AccessToken          string    `json:"access_token"`
+		AccessTokenExpiresAt time.Time `json:"access_token_expires_at"`
 	}
+
+	response.AccessToken = accessToken
+	response.AccessTokenExpiresAt = accessPayload.ExpiredAt
+
 	ctx.JSON(http.StatusOK, response)
 }
