@@ -194,7 +194,7 @@ func TestCreateRole(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := "/api/auth/admin/role"
+			url := "/api/v1/auth/admin/role"
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
@@ -383,7 +383,7 @@ func TestGetAllRole(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := "/api/auth/admin/role/all"
+			url := "/api/v1/auth/admin/role/all"
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
@@ -554,7 +554,7 @@ func TestGetRole(t *testing.T) {
 			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
-			url := fmt.Sprintf("/api/auth/admin/role/%s", tc.externalID)
+			url := fmt.Sprintf("/api/v1/auth/admin/role/%s", tc.externalID)
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
@@ -788,7 +788,7 @@ func TestUpdateRole(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := "/api/auth/admin/role"
+			url := "/api/v1/auth/admin/role"
 			request, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
@@ -959,7 +959,7 @@ func TestDeleteRole(t *testing.T) {
 			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
-			url := fmt.Sprintf("/api/auth/admin/role/%s", tc.externalID)
+			url := fmt.Sprintf("/api/v1/auth/admin/role/%s", tc.externalID)
 			request, err := http.NewRequest(http.MethodDelete, url, nil)
 			require.NoError(t, err)
 

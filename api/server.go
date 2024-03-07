@@ -26,12 +26,13 @@ func (server *Server) setupRouter() {
 	router.Use(CORSMiddleware(server), errorHandlingMiddleware())
 
 	apiGroup := router.Group("/api")
+	apiVersion := apiGroup.Group("/v1")
 
-	apiGroup.POST("/users", server.createUser)
-	apiGroup.POST("/users/login", server.loginUser)
-	apiGroup.POST("/tokens/renew_access", server.renewAccessToken)
+	apiVersion.POST("/users", server.createUser)
+	apiVersion.POST("/users/login", server.loginUser)
+	apiVersion.POST("/tokens/renew_access", server.renewAccessToken)
 
-	authGroup := apiGroup.Group("/auth")
+	authGroup := apiVersion.Group("/auth")
 	authGroup.Use(authMiddleware(server))
 
 	customerGroup := authGroup.Group("/customer")

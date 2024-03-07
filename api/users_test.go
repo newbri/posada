@@ -270,7 +270,7 @@ func TestCreateUser(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := "/api/users"
+			url := "/api/v1/users"
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
@@ -433,7 +433,7 @@ func TestGetUser(t *testing.T) {
 			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
-			url := fmt.Sprintf("/api/auth/admin/users/%s", tc.username)
+			url := fmt.Sprintf("/api/v1/auth/admin/users/%s", tc.username)
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
@@ -738,7 +738,7 @@ func TestUpdateUser(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := "/api/auth/customer/users"
+			url := "/api/v1/auth/customer/users"
 			request, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
@@ -909,7 +909,7 @@ func TestDeleteUser(t *testing.T) {
 			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
-			url := fmt.Sprintf("/api/auth/admin/users/%s", tc.username)
+			url := fmt.Sprintf("/api/v1/auth/admin/users/%s", tc.username)
 			request, err := http.NewRequest(http.MethodDelete, url, nil)
 			require.NoError(t, err)
 
@@ -1223,7 +1223,7 @@ func TestLoginUser(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := "/api/users/login"
+			url := "/api/v1/users/login"
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
@@ -1358,7 +1358,7 @@ func TestUserInfo(t *testing.T) {
 			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
-			url := "/api/auth/customer/users/info"
+			url := "/api/v1/auth/customer/users/info"
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
@@ -1594,7 +1594,7 @@ func TestGetAllCustomer(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := "/api/auth/admin/users/all/customer"
+			url := "/api/v1/auth/admin/users/all/customer"
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
@@ -1691,7 +1691,7 @@ func TestGetAllAdmin(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := "/api/auth/su/users/all/admin"
+			url := "/api/v1/auth/su/users/all/admin"
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 

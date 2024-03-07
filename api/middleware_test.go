@@ -256,7 +256,7 @@ func TestAuthMiddleware(t *testing.T) {
 			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
-			url := "/api/auth/customer/users/info"
+			url := "/api/v1/auth/customer/users/info"
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
@@ -343,7 +343,7 @@ func TestPasetoAuthRole(t *testing.T) {
 			server := newTestServer(querier, tc.env)
 			tc.mock(server)
 
-			url := "/api/auth/customer/users/info"
+			url := "/api/v1/auth/customer/users/info"
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
