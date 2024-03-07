@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"github.com/gin-gonic/gin"
 	"github.com/newbri/posadamissportia/db"
-	"github.com/newbri/posadamissportia/mocker"
+	"github.com/newbri/posadamissportia/db/mocker"
 	"github.com/newbri/posadamissportia/token"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
