@@ -7,55 +7,17 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
 	"github.com/newbri/posadamissportia/db/util"
-	"github.com/rs/zerolog/log"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"regexp"
 	"testing"
 	"time"
 )
 
-type mockQuerierDB struct {
-	mock.Mock
-	*Queries
-}
-
-func (m *mockQuerierDB) CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error) {
-	return m.Queries.CreateUser(ctx, arg)
-}
-
-func (m *mockQuerierDB) GetRoleByUUID(ctx context.Context, internalId uuid.UUID) (*Role, error) {
-	return m.Queries.GetRoleByUUID(ctx, internalId)
-}
-
-func (m *mockQuerierDB) GetUser(ctx context.Context, username string) (*User, error) {
-	return m.Queries.GetUser(ctx, username)
-}
-
-func (m *mockQuerierDB) UpdateUser(ctx context.Context, arg UpdateUserParams) (*User, error) {
-	return m.Queries.UpdateUser(ctx, arg)
-}
-
-func (m *mockQuerierDB) DeleteUser(ctx context.Context, username string, deletedAt time.Time) (*User, error) {
-	return m.Queries.DeleteUser(ctx, username, deletedAt)
-}
-
-func (m *mockQuerierDB) GetAllCustomer(ctx context.Context, arg ListUsersParams) ([]*User, error) {
-	return m.Queries.GetAllCustomer(ctx, arg)
-}
-
-func (m *mockQuerierDB) GetAllAdmin(ctx context.Context, arg ListUsersParams) ([]*User, error) {
-	return m.Queries.GetAllAdmin(ctx, arg)
-}
-
 func TestCreateUser(t *testing.T) {
 	db, mocker, err := sqlmock.New()
 	require.NoError(t, err)
 	defer func(db *sql.DB) {
-		err := db.Close()
-		if err != nil {
-
-		}
+		_ = db.Close()
 	}(db)
 
 	expectedUser := createRandomUserWithRole(RoleCustomer, false)
@@ -136,10 +98,7 @@ func TestGetUser(t *testing.T) {
 	db, mocker, err := sqlmock.New()
 	require.NoError(t, err)
 	defer func(db *sql.DB) {
-		err := db.Close()
-		if err != nil {
-
-		}
+		_ = db.Close()
 	}(db)
 
 	expectedUser := createRandomUserWithRole(RoleCustomer, false)
@@ -209,10 +168,7 @@ func TestUpdateUser(t *testing.T) {
 	db, mocker, err := sqlmock.New()
 	require.NoError(t, err)
 	defer func(db *sql.DB) {
-		err := db.Close()
-		if err != nil {
-
-		}
+		_ = db.Close()
 	}(db)
 
 	expectedUser := createRandomUserWithRole(RoleCustomer, false)
@@ -324,10 +280,7 @@ func TestDeleteUser(t *testing.T) {
 	db, mocker, err := sqlmock.New()
 	require.NoError(t, err)
 	defer func(db *sql.DB) {
-		err := db.Close()
-		if err != nil {
-
-		}
+		_ = db.Close()
 	}(db)
 
 	expectedUser := createRandomUserWithRole(RoleCustomer, false)
@@ -394,10 +347,7 @@ func TestGetAllCustomer(t *testing.T) {
 	db, mocker, err := sqlmock.New()
 	require.NoError(t, err)
 	defer func(db *sql.DB) {
-		err := db.Close()
-		if err != nil {
-
-		}
+		_ = db.Close()
 	}(db)
 	amountUserToCreate := uint(6)
 	expectedUsers := createMultipleRandomUserWithRole(amountUserToCreate, RoleCustomer, false)
@@ -544,10 +494,7 @@ func TestGetAllAdmin(t *testing.T) {
 	db, mocker, err := sqlmock.New()
 	require.NoError(t, err)
 	defer func(db *sql.DB) {
-		err := db.Close()
-		if err != nil {
-
-		}
+		_ = db.Close()
 	}(db)
 
 	amountUserToCreate := uint(6)
@@ -590,18 +537,6 @@ func TestGetAllAdmin(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			var err error
-			db, mocker, err = sqlmock.New()
-			if err != nil {
-				log.Fatal().Msgf("an error '%s' was not expected when opening a stub database connection", err)
-			}
-			defer func(db *sql.DB) {
-				err := db.Close()
-				if err != nil {
-
-				}
-			}(db)
-
 			mockQuery := &Queries{db: db}
 
 			tc.mock(tc.userQueryRows, false, tc.arg)

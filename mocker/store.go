@@ -2,6 +2,7 @@ package mocker
 
 import (
 	"context"
+	"github.com/newbri/posadamissportia/configuration"
 	"github.com/newbri/posadamissportia/db"
 	"github.com/newbri/posadamissportia/token"
 	"github.com/stretchr/testify/mock"
@@ -12,6 +13,7 @@ type TestMocker struct {
 	mock.Mock
 	db.Querier
 	token.Maker
+	configuration.Configuration
 }
 
 func (m *TestMocker) GetRoleByName(ctx context.Context, name string) (*db.Role, error) {
@@ -118,4 +120,10 @@ func (m *TestMocker) DeleteRole(ctx context.Context, externalID string) (*db.Rol
 	ret0, _ := args.Get(0).(*db.Role)
 	ret1, _ := args.Get(1).(error)
 	return ret0, ret1
+}
+
+func (m *TestMocker) GetConfig() *configuration.Config {
+	args := m.Called()
+	ret0, _ := args.Get(0).(*configuration.Config)
+	return ret0
 }
