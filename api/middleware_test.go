@@ -248,6 +248,53 @@ func TestAuthMiddleware(t *testing.T) {
 				)
 			},
 		},
+		{
+			name:     "WrongAuthorizationHeaderKey",
+			env:      "test",
+			username: adminUser.Username,
+			mock: func(server *Server) {
+				querier, ok := server.store.(*mocker.TestMocker)
+				require.True(t, ok)
+
+				server.config.GetConfig().AuthorizationHeaderKey = "wrong"
+
+				refreshToken, payload, err := createToken(
+					server.config.GetConfig().TokenSymmetricKey,
+					adminUser.Username,
+					adminUser.Role,
+					server.config.GetConfig().RefreshTokenDuration,
+				)
+				require.NoError(t, err)
+
+				querier.
+					On("CreateToken", mock.Anything, mock.Anything, mock.Anything).
+					Times(1).
+					Return(refreshToken, payload, nil)
+
+				querier.
+					On("VerifyToken", mock.Anything).
+					Times(1).
+					Return(payload, nil)
+
+				querier.
+					On("GetUser", mock.Anything, mock.Anything).
+					Times(1).
+					Return(adminUser, nil)
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusUnauthorized, recorder.Code)
+			},
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					adminUser.Username,
+					adminUser.Role,
+					time.Minute,
+				)
+			},
+		},
 	}
 
 	for _, tc := range testCases {
