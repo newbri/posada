@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"github.com/gin-gonic/gin"
+	"github.com/newbri/posadamissportia/configuration"
 	"github.com/newbri/posadamissportia/db"
 	"github.com/newbri/posadamissportia/db/mocker"
 	"github.com/newbri/posadamissportia/token"
@@ -142,7 +143,8 @@ func TestAuthMiddleware(t *testing.T) {
 				querier.
 					On("VerifyToken", mock.Anything).
 					Times(1).
-					Return(nil, token.ErrInvalidToken)
+					Return(nil, token.ErrInvalidToken).
+					Once()
 			},
 			response: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusUnauthorized, recorder.Code)
@@ -182,7 +184,8 @@ func TestAuthMiddleware(t *testing.T) {
 				querier.
 					On("VerifyToken", mock.Anything).
 					Times(1).
-					Return(payload, nil)
+					Return(payload, nil).
+					Once()
 
 				querier.
 					On("GetUser", mock.Anything, mock.Anything).
@@ -227,7 +230,8 @@ func TestAuthMiddleware(t *testing.T) {
 				querier.
 					On("VerifyToken", mock.Anything).
 					Times(1).
-					Return(payload, nil)
+					Return(payload, nil).
+					Once()
 
 				querier.
 					On("GetUser", mock.Anything, mock.Anything).
@@ -274,7 +278,8 @@ func TestAuthMiddleware(t *testing.T) {
 				querier.
 					On("VerifyToken", mock.Anything).
 					Times(1).
-					Return(payload, nil)
+					Return(payload, nil).
+					Once()
 
 				querier.
 					On("GetUser", mock.Anything, mock.Anything).
@@ -295,12 +300,54 @@ func TestAuthMiddleware(t *testing.T) {
 				)
 			},
 		},
+		{
+			name:     "WrongVerifyToken",
+			env:      "test",
+			username: adminUser.Username,
+			mock: func(server *Server) {
+				querier, ok := server.store.(*mocker.TestMocker)
+				require.True(t, ok)
+
+				refreshToken, payload, err := createToken(
+					server.config.GetConfig().TokenSymmetricKey,
+					adminUser.Username,
+					adminUser.Role,
+					server.config.GetConfig().RefreshTokenDuration,
+				)
+				require.NoError(t, err)
+
+				querier.
+					On("CreateToken", mock.Anything, mock.Anything, mock.Anything).
+					Times(1).
+					Return(refreshToken, payload, nil)
+
+				querier.
+					On("VerifyToken", mock.Anything).
+					Times(1).
+					Return(nil, token.ErrInvalidToken)
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusUnauthorized, recorder.Code)
+			},
+			auth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t,
+					request,
+					tokenMaker,
+					authorizationTypeBearer,
+					adminUser.Username,
+					adminUser.Role,
+					time.Minute,
+				)
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			querier := new(mocker.TestMocker)
-			server := newTestServer(querier, tc.env)
+
+			config := configuration.NewYAMLConfiguration("../app.yaml", tc.env)
+			server := NewServer(querier, querier, config)
 			tc.mock(server)
 
 			url := "/api/v1/auth/customer/users/info"
@@ -353,7 +400,8 @@ func TestPasetoAuthRole(t *testing.T) {
 				querier.
 					On("VerifyToken", mock.Anything).
 					Times(1).
-					Return(payload, nil)
+					Return(payload, nil).
+					Once()
 
 				config1 := createConfiguration()
 				config2 := createConfiguration()
