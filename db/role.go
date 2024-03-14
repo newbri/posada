@@ -15,7 +15,7 @@ const (
 )
 const createRoleQuery = `
 INSERT INTO role (internal_id, name, description, external_id) 
-VALUES (gen_random_uuid(),$2,$3, CONCAT('URE',nextval('role_sequence')))
+VALUES (gen_random_uuid(),$1,$2, CONCAT('URE',nextval('role_sequence')))
 RETURNING internal_id,name,description,external_id,created_at,updated_at
 `
 
