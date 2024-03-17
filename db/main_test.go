@@ -186,3 +186,45 @@ func createUserParams(user *User) *CreateUserParams {
 		RoleID:         user.Role.InternalID,
 	}
 }
+
+func createSessionParams() *CreateSessionParams {
+	return &CreateSessionParams{
+		ID:           uuid.New(),
+		Username:     util.RandomOwner(),
+		RefreshToken: "v2.local.062BnLQ2SfzDwxpDeiHiF0Kv2nO4Ixfz47pTVKctf8Dln42rngnWuqDIb1VclXsDNJ4QWBYHqsVYriHjMnJ25sCHObv98yDFAt7UKgO1w6x9UUI7t_I6LWm6cnB-DOS4gzYWk9UXSzOKVgBTk5OPFiCNkQAorToPAJbIXEZmLSa4Niq1M6unXwoZwVP2HBLvOgBvBrL6PYHrwegeCXdq8Ce_izphetqzzHWRmqjq6J-3MSSeN0J4ZayZt9SN_Lv93zkuKajLTvpdPBDKY35VDkZel0wLzmXamnq8JBvpfixepJmtJCo-Ja-QyLat0qLuBXrVlYxR7kE0oFeBhrZ4KxazC4g3RTHYev8WfQM4HkUTtYpDZFD6AupeBjkp1q4vRQuWI5PtyDGT0l8aXFQwQdvuut4TCi5U_B0TghLFuEeUrmLylpYIQ_mJyXDu1YaIiVP5ZwCKkbERbb7hB5tETQ_1BMMZT1iPsBSleZ4Bam-x16B5fEJTs1czbXuLKw.bnVsbA",
+		UserAgent:    "PostmanRuntime/7.36.3",
+		ClientIp:     "::1",
+		IsBlocked:    false,
+		ExpiredAt:    time.Now().Add(time.Minute * 15),
+		CreatedAt:    time.Now(),
+	}
+}
+
+func getMockedExpectedCreateSession(session *Session) *sqlmock.Rows {
+	return sqlmock.NewRows([]string{"id", "username", "refresh_token", "user_agent", "client_ip", "is_blocked", "expired_at", "created_at", "blocked_at"}).
+		AddRow(
+			&session.ID,           // id
+			&session.Username,     // username
+			&session.RefreshToken, // refresh_token
+			&session.UserAgent,    // user_agent
+			&session.ClientIp,     // client_ip
+			&session.IsBlocked,    // is_blocked
+			&session.ExpiredAt,    // expired_at
+			&session.CreatedAt,    // created_at
+			&session.BlockedAt,    // blocked_at
+		)
+}
+
+func createSession(arg *CreateSessionParams) *Session {
+	return &Session{
+		ID:           arg.ID,
+		Username:     arg.Username,
+		RefreshToken: arg.RefreshToken,
+		UserAgent:    arg.UserAgent,
+		ClientIp:     arg.ClientIp,
+		IsBlocked:    false,
+		CreatedAt:    arg.CreatedAt,
+		ExpiredAt:    arg.ExpiredAt,
+		BlockedAt:    time.Time{},
+	}
+}
