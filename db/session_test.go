@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"regexp"
 	"testing"
@@ -57,6 +58,49 @@ func TestCreateSession(t *testing.T) {
 
 			tc.mock(tc.sessionQueryRows, arg)
 			tc.response(mockQuery, expectedSession, *arg)
+		})
+	}
+}
+
+func TestGetSession(t *testing.T) {
+	db, mocker, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func(db *sql.DB) {
+		_ = db.Close()
+	}(db)
+
+	arg := createSessionParams()
+	expectedSession := createSession(arg)
+	testCases := []struct {
+		name             string
+		sessionQueryRows *sqlmock.Rows
+		mock             func(userQueryRows *sqlmock.Rows, id uuid.UUID)
+		response         func(querier Querier, expectedSession *Session, id uuid.UUID)
+	}{
+		{
+			name:             "OK",
+			sessionQueryRows: getMockedExpectedCreateSession(expectedSession),
+			mock: func(userQueryRows *sqlmock.Rows, id uuid.UUID) {
+				// the CreateUser sql mock
+				mocker.
+					ExpectQuery(regexp.QuoteMeta(getSessionQuery)).
+					WithArgs(id).
+					WillReturnRows(userQueryRows)
+			},
+			response: func(querier Querier, expectedSession *Session, id uuid.UUID) {
+				actualSession, err := querier.GetSession(context.Background(), id)
+				require.NoError(t, err)
+				require.Equal(t, actualSession, expectedSession)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockQuery := &Queries{db: db}
+
+			tc.mock(tc.sessionQueryRows, expectedSession.ID)
+			tc.response(mockQuery, expectedSession, expectedSession.ID)
 		})
 	}
 }
