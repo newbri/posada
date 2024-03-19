@@ -37,3 +37,17 @@ type Role struct {
 	UpdatedAt   time.Time `json:"expired_at"`
 	CreatedAt   time.Time `json:"created_at"`
 }
+
+type Property struct {
+	InternalID uuid.UUID `json:"-"`
+	ExternalID string    `json:"external_id"`
+	Name       string    `json:"name"`
+	Address    string    `json:"address"`
+	State      string    `json:"state"`
+	Country    string    `json:"country"`
+	PostalCode string    `json:"postal_code"`
+	Phone      string    `json:"phone"`
+	Email      string    `json:"email"`
+	ExpiredAt  time.Time `json:"expired_at"`
+	CreatedAt  time.Time `json:"created_at"`
+}
