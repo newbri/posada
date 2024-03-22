@@ -57,3 +57,29 @@ func (q *Queries) CreateProperty(ctx context.Context, arg CreatePropertyParams) 
 	)
 	return &property, err
 }
+
+const activatePropertyQuery = `
+	UPDATE property SET is_active = $1 WHERE internal_id = $2
+	RETURNING internal_id, external_id, name, address, state, city, country, postal_code, phone, email, is_active, expired_at, created_at;
+`
+
+func (q *Queries) ActivateDeactivateProperty(ctx context.Context, isActive bool, externalId string) (*Property, error) {
+	row := q.db.QueryRowContext(ctx, activatePropertyQuery, isActive, externalId)
+	var property Property
+	err := row.Scan(
+		&property.InternalID,
+		&property.ExternalID,
+		&property.Name,
+		&property.Address,
+		&property.State,
+		&property.City,
+		&property.Country,
+		&property.PostalCode,
+		&property.Phone,
+		&property.Email,
+		&property.IsActive,
+		&property.ExpiredAt,
+		&property.CreatedAt,
+	)
+	return &property, err
+}
