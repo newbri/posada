@@ -49,6 +49,7 @@ type Property struct {
 	PostalCode string    `json:"postal_code"`
 	Phone      string    `json:"phone"`
 	Email      string    `json:"email"`
+	IsActive   bool      `json:"is_active"`
 	ExpiredAt  time.Time `json:"expired_at"`
 	CreatedAt  time.Time `json:"created_at"`
 }
