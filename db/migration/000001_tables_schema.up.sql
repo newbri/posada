@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS "property"
     "postal_code" text        NOT NULL,
     "phone"       text        NOT NULL,
     "email"       text        NOT NULL UNIQUE,
+    "is_active"   boolean     NOT NULL DEFAULT (FALSE),
     "expired_at"  timestamptz NOT NULL,
     "created_at"  timestamptz NOT NULL DEFAULT (now())
 );
