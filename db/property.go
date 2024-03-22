@@ -2,21 +2,19 @@ package db
 
 import (
 	"context"
-	"github.com/google/uuid"
 	"time"
 )
 
 const createPropertyQuery = `
-	INSERT INTO property(internal_id, external_id, name, address, state, country, postal_code, phone, email, expired_at, created_at) 
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-	RETURNING internal_id, external_id, name, address, state, country, postal_code, phone, email, expired_at, created_at;
+	INSERT INTO property(internal_id, external_id, name, address, state, city, country, postal_code, phone, email, expired_at, created_at) 
+	VALUES (gen_random_uuid(), CONCAT('PRO',nextval('property_sequence')), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	RETURNING internal_id, external_id, name, address, state, city, country, postal_code, phone, email, expired_at, created_at;
 `
 
 type CreatePropertyParams struct {
-	InternalID uuid.UUID
-	ExternalID string
 	Name       string
 	Address    string
+	City       string
 	State      string
 	Country    string
 	PostalCode string
@@ -30,11 +28,10 @@ func (q *Queries) CreateProperty(ctx context.Context, arg CreatePropertyParams) 
 	row := q.db.QueryRowContext(
 		ctx,
 		createPropertyQuery,
-		arg.InternalID,
-		arg.ExternalID,
 		arg.Name,
 		arg.Address,
 		arg.State,
+		arg.City,
 		arg.Country,
 		arg.PostalCode,
 		arg.Phone,
@@ -49,6 +46,7 @@ func (q *Queries) CreateProperty(ctx context.Context, arg CreatePropertyParams) 
 		&property.Name,
 		&property.Address,
 		&property.State,
+		&property.City,
 		&property.Country,
 		&property.PostalCode,
 		&property.Phone,
