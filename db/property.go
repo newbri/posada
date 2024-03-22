@@ -8,7 +8,7 @@ import (
 const createPropertyQuery = `
 	INSERT INTO property(internal_id, external_id, name, address, state, city, country, postal_code, phone, email, expired_at, created_at) 
 	VALUES (gen_random_uuid(), CONCAT('PRO',nextval('property_sequence')), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-	RETURNING internal_id, external_id, name, address, state, city, country, postal_code, phone, email, expired_at, created_at;
+	RETURNING internal_id, external_id, name, address, state, city, country, postal_code, phone, email, is_active, expired_at, created_at;
 `
 
 type CreatePropertyParams struct {
@@ -51,6 +51,7 @@ func (q *Queries) CreateProperty(ctx context.Context, arg CreatePropertyParams) 
 		&property.PostalCode,
 		&property.Phone,
 		&property.Email,
+		&property.IsActive,
 		&property.ExpiredAt,
 		&property.CreatedAt,
 	)
