@@ -59,7 +59,7 @@ func (q *Queries) CreateProperty(ctx context.Context, arg CreatePropertyParams) 
 }
 
 const activatePropertyQuery = `
-	UPDATE property SET is_active = $1 WHERE internal_id = $2
+	UPDATE property SET is_active = $1 WHERE property.external_id = $2
 	RETURNING internal_id, external_id, name, address, state, city, country, postal_code, phone, email, is_active, expired_at, created_at;
 `
 
