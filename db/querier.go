@@ -24,4 +24,5 @@ type Querier interface {
 	GetAllCustomer(ctx context.Context, arg ListUsersParams) ([]*User, error)
 	GetAllAdmin(ctx context.Context, arg ListUsersParams) ([]*User, error)
 	CreateProperty(ctx context.Context, arg CreatePropertyParams) (*Property, error)
+	ActivateProperty(ctx context.Context, isActive bool, externalId string) (*Property, error)
 }
