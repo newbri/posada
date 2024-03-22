@@ -41,10 +41,11 @@ CREATE TABLE IF NOT EXISTS "property"
     "name"        text        NOT NULL,
     "address"     text        NOT NULL,
     "state"       text        NOT NULL,
+    "city"        text        NOT NULL,
     "country"     text        NOT NULL,
     "postal_code" text        NOT NULL,
     "phone"       text        NOT NULL,
-    "email"       text        NOT NULL,
+    "email"       text        NOT NULL UNIQUE,
     "expired_at"  timestamptz NOT NULL,
     "created_at"  timestamptz NOT NULL DEFAULT (now())
 );
@@ -80,6 +81,7 @@ ALTER TABLE IF EXISTS "property_user"
             ON DELETE CASCADE;
 
 CREATE SEQUENCE IF NOT EXISTS "role_sequence" START 101;
+CREATE SEQUENCE IF NOT EXISTS "property_sequence" START 101;
 
 INSERT INTO "role" (internal_id, name, description, external_id)
 VALUES (gen_random_uuid(), 'su', E'Super user\'s role', CONCAT('URE', nextval('role_sequence')));
