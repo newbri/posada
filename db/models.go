@@ -44,6 +44,7 @@ type Property struct {
 	Name       string    `json:"name"`
 	Address    string    `json:"address"`
 	State      string    `json:"state"`
+	City       string    `json:"city"`
 	Country    string    `json:"country"`
 	PostalCode string    `json:"postal_code"`
 	Phone      string    `json:"phone"`
