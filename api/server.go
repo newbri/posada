@@ -61,6 +61,7 @@ func (server *Server) setupRouter() {
 	adminGroup.PUT("/users", server.updateUser)
 	adminGroup.POST("/users/all/customer", server.getAllCustomer)
 	adminGroup.POST("/property", server.createProperty)
+	adminGroup.POST("/property/activate", server.activateDeactivateProperty)
 
 	// su
 	suGroup := authGroup.Group("/su")
