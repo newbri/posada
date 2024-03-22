@@ -54,6 +54,7 @@ func (server *Server) createProperty(ctx *gin.Context) {
 		PostalCode string    `json:"postal_code"`
 		Phone      string    `json:"phone"`
 		Email      string    `json:"email"`
+		IsActive   bool      `json:"is_active"`
 		CreatedAt  time.Time `json:"created_at"`
 	}
 
@@ -66,6 +67,7 @@ func (server *Server) createProperty(ctx *gin.Context) {
 	response.PostalCode = createdProperty.PostalCode
 	response.Phone = createdProperty.Phone
 	response.Email = createdProperty.Email
+	response.IsActive = createdProperty.IsActive
 	response.CreatedAt = createdProperty.CreatedAt
 
 	ctx.JSON(http.StatusOK, response)
