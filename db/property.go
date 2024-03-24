@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"time"
 )
 
@@ -39,23 +40,7 @@ func (q *Queries) CreateProperty(ctx context.Context, arg CreatePropertyParams) 
 		arg.ExpiredAt,
 		arg.CreatedAt,
 	)
-	var property Property
-	err := row.Scan(
-		&property.InternalID,
-		&property.ExternalID,
-		&property.Name,
-		&property.Address,
-		&property.State,
-		&property.City,
-		&property.Country,
-		&property.PostalCode,
-		&property.Phone,
-		&property.Email,
-		&property.IsActive,
-		&property.ExpiredAt,
-		&property.CreatedAt,
-	)
-	return &property, err
+	return getProperty(row)
 }
 
 const activatePropertyQuery = `
@@ -65,6 +50,10 @@ const activatePropertyQuery = `
 
 func (q *Queries) ActivateDeactivateProperty(ctx context.Context, isActive bool, externalId string) (*Property, error) {
 	row := q.db.QueryRowContext(ctx, activatePropertyQuery, isActive, externalId)
+	return getProperty(row)
+}
+
+func getProperty(row *sql.Row) (*Property, error) {
 	var property Property
 	err := row.Scan(
 		&property.InternalID,
@@ -81,5 +70,8 @@ func (q *Queries) ActivateDeactivateProperty(ctx context.Context, isActive bool,
 		&property.ExpiredAt,
 		&property.CreatedAt,
 	)
-	return &property, err
+	if err != nil {
+		return nil, err
+	}
+	return &property, nil
 }
