@@ -77,7 +77,7 @@ func (server *Server) createProperty(ctx *gin.Context) {
 
 func (server *Server) activateDeactivateProperty(ctx *gin.Context) {
 	var request struct {
-		Active     bool   `json:"active" binding:"required"`
+		Active     *bool  `json:"active" binding:"required"`
 		ExternalID string `json:"external_id" binding:"required"`
 	}
 
@@ -86,7 +86,7 @@ func (server *Server) activateDeactivateProperty(ctx *gin.Context) {
 		return
 	}
 
-	activeProperty, err := server.store.ActivateDeactivateProperty(ctx, request.Active, request.ExternalID)
+	activeProperty, err := server.store.ActivateDeactivateProperty(ctx, *request.Active, request.ExternalID)
 	if err != nil {
 		log.Info().Msg(ctx.Error(err).Error())
 		return
