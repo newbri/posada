@@ -53,6 +53,53 @@ func (q *Queries) ActivateDeactivateProperty(ctx context.Context, isActive bool,
 	return getProperty(row)
 }
 
+type ListPropertyParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
+
+const getAllPropertyQuery = `
+SELECT internal_id, external_id, name, address, state, city, country, postal_code, phone, email, is_active, expired_at, created_at
+FROM property LIMIT $1 OFFSET $2;
+`
+
+func (q *Queries) GetAllProperty(ctx context.Context, arg ListPropertyParams) ([]*Property, error) {
+	rows, err := q.db.QueryContext(ctx, getAllPropertyQuery, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer func(rows *sql.Rows) {
+		_ = rows.Close()
+	}(rows)
+
+	var items []*Property
+	for rows.Next() {
+		var property Property
+		if err := rows.Scan(
+			&property.InternalID,
+			&property.ExternalID,
+			&property.Name,
+			&property.Address,
+			&property.State,
+			&property.City,
+			&property.Country,
+			&property.PostalCode,
+			&property.Phone,
+			&property.Email,
+			&property.IsActive,
+			&property.ExpiredAt,
+			&property.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &property)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 func getProperty(row *sql.Row) (*Property, error) {
 	var property Property
 	err := row.Scan(
