@@ -108,3 +108,27 @@ func (server *Server) activateDeactivateProperty(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, response)
 }
+
+func (server *Server) getAllProperty(ctx *gin.Context) {
+	var request struct {
+		Limit  int32 `json:"limit" binding:"required,gte=1"`
+		Offset int32 `json:"offset" binding:"min=0"`
+	}
+	if err := ctx.ShouldBindJSON(&request); err != nil {
+		log.Info().Msg(ctx.Error(err).Error())
+		return
+	}
+
+	arg := db.ListPropertyParams{
+		Limit:  request.Limit,
+		Offset: request.Offset,
+	}
+
+	allProperty, err := server.store.GetAllProperty(ctx, arg)
+	if err != nil {
+		log.Info().Msg(ctx.Error(err).Error())
+		return
+	}
+
+	ctx.JSON(http.StatusOK, allProperty)
+}
