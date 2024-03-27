@@ -100,6 +100,16 @@ func (q *Queries) GetAllProperty(ctx context.Context, arg ListPropertyParams) ([
 	return items, nil
 }
 
+const getPropertyQuery = `
+SELECT internal_id, external_id, name, address, state, city, country, postal_code, phone, email, is_active, expired_at, created_at
+FROM property WHERE external_id = $1;
+`
+
+func (q *Queries) GetProperty(ctx context.Context, Id string) (*Property, error) {
+	row := q.db.QueryRowContext(ctx, getPropertyQuery, Id)
+	return getProperty(row)
+}
+
 func getProperty(row *sql.Row) (*Property, error) {
 	var property Property
 	err := row.Scan(

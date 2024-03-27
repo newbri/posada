@@ -132,3 +132,23 @@ func (server *Server) getAllProperty(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, allProperty)
 }
+
+type propertyID struct {
+	ID string `uri:"id" binding:"required,alphanum"`
+}
+
+func (server *Server) getProperty(ctx *gin.Context) {
+	var request propertyID
+	if err := ctx.ShouldBindUri(&request); err != nil {
+		log.Info().Msg(ctx.Error(ErrShouldBindUri).Error())
+		return
+	}
+
+	property, err := server.store.GetProperty(ctx, request.ID)
+	if err != nil {
+		log.Info().Msg(ctx.Error(err).Error())
+		return
+	}
+
+	ctx.JSON(http.StatusOK, property)
+}

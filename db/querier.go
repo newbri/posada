@@ -26,4 +26,5 @@ type Querier interface {
 	CreateProperty(ctx context.Context, arg CreatePropertyParams) (*Property, error)
 	ActivateDeactivateProperty(ctx context.Context, isActive bool, externalId string) (*Property, error)
 	GetAllProperty(ctx context.Context, arg ListPropertyParams) ([]*Property, error)
+	GetProperty(ctx context.Context, Id string) (*Property, error)
 }
