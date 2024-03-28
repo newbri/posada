@@ -137,7 +137,7 @@ RETURNING internal_id, external_id, name, address, state, city, country, postal_
 `
 
 func (q *Queries) UpdateProperty(ctx context.Context, arg UpdatePropertyParams) (*Property, error) {
-	_, err := q.db.ExecContext(ctx, updatePropertyQuery,
+	row := q.db.QueryRowContext(ctx, updatePropertyQuery,
 		arg.Name,
 		arg.Address,
 		arg.State,
@@ -148,10 +148,7 @@ func (q *Queries) UpdateProperty(ctx context.Context, arg UpdatePropertyParams) 
 		arg.Email,
 		arg.ExternalID,
 	)
-	if err != nil {
-		return nil, err
-	}
-	return q.GetProperty(ctx, arg.ExternalID)
+	return getProperty(row)
 }
 
 func getProperty(row *sql.Row) (*Property, error) {
