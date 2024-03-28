@@ -28,4 +28,5 @@ type Querier interface {
 	GetAllProperty(ctx context.Context, arg ListPropertyParams) ([]*Property, error)
 	GetProperty(ctx context.Context, Id string) (*Property, error)
 	UpdateProperty(ctx context.Context, arg UpdatePropertyParams) (*Property, error)
+	DeleteProperty(ctx context.Context, externalID string) (*Property, error)
 }
