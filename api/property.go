@@ -222,3 +222,19 @@ func (server *Server) updateProperty(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, property)
 }
+
+func (server *Server) deleteProperty(ctx *gin.Context) {
+	var request propertyID
+	if err := ctx.ShouldBindUri(&request); err != nil {
+		log.Info().Msg(ctx.Error(ErrShouldBindUri).Error())
+		return
+	}
+
+	property, err := server.store.DeleteProperty(ctx, request.ID)
+	if err != nil {
+		log.Info().Msg(ctx.Error(err).Error())
+		return
+	}
+
+	ctx.JSON(http.StatusOK, property)
+}
