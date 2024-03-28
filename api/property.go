@@ -1,10 +1,13 @@
 package api
 
 import (
+	"database/sql"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/newbri/posadamissportia/db"
 	"github.com/rs/zerolog/log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -147,6 +150,73 @@ func (server *Server) getProperty(ctx *gin.Context) {
 	property, err := server.store.GetProperty(ctx, request.ID)
 	if err != nil {
 		log.Info().Msg(ctx.Error(err).Error())
+		return
+	}
+
+	ctx.JSON(http.StatusOK, property)
+}
+
+func (server *Server) updateProperty(ctx *gin.Context) {
+	var request struct {
+		ExternalID string `json:"external_id" binding:"required"`
+		Name       string `json:"name" binding:"omitempty"`
+		Address    string `json:"address" binding:"omitempty"`
+		State      string `json:"state" binding:"omitempty"`
+		City       string `json:"city" binding:"omitempty"`
+		Country    string `json:"country" binding:"omitempty"`
+		PostalCode string `json:"postal_code" binding:"omitempty"`
+		Phone      string `json:"phone" binding:"omitempty,e164"`
+		Email      string `json:"email" binding:"omitempty,email"`
+	}
+
+	if err := ctx.ShouldBindJSON(&request); err != nil {
+		log.Info().Msg(ctx.Error(err).Error())
+		return
+	}
+
+	args := db.UpdatePropertyParams{
+		ExternalID: request.ExternalID,
+		Name: sql.NullString{
+			String: request.Name,
+			Valid:  len(strings.TrimSpace(request.Name)) > 0,
+		},
+		Address: sql.NullString{
+			String: request.Address,
+			Valid:  len(strings.TrimSpace(request.Address)) > 0,
+		},
+		State: sql.NullString{
+			String: request.State,
+			Valid:  len(strings.TrimSpace(request.State)) > 0,
+		},
+		City: sql.NullString{
+			String: request.City,
+			Valid:  len(strings.TrimSpace(request.City)) > 0,
+		},
+		Country: sql.NullString{
+			String: request.Country,
+			Valid:  len(strings.TrimSpace(request.Country)) > 0,
+		},
+		PostalCode: sql.NullString{
+			String: request.PostalCode,
+			Valid:  len(strings.TrimSpace(request.PostalCode)) > 0,
+		},
+		Phone: sql.NullString{
+			String: request.Phone,
+			Valid:  len(strings.TrimSpace(request.Phone)) > 0,
+		},
+		Email: sql.NullString{
+			String: request.Email,
+			Valid:  len(strings.TrimSpace(request.Email)) > 0,
+		},
+	}
+
+	property, err := server.store.UpdateProperty(ctx, args)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			log.Info().Msg(ctx.Error(ErrNoRow).Error())
+			return
+		}
+		log.Info().Msg(ctx.Error(ErrInternalServer).Error())
 		return
 	}
 

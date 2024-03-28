@@ -110,6 +110,50 @@ func (q *Queries) GetProperty(ctx context.Context, Id string) (*Property, error)
 	return getProperty(row)
 }
 
+type UpdatePropertyParams struct {
+	ExternalID string         `json:"external_id"`
+	Name       sql.NullString `json:"name"`
+	Address    sql.NullString `json:"address"`
+	State      sql.NullString `json:"state"`
+	City       sql.NullString `json:"city"`
+	Country    sql.NullString `json:"country"`
+	PostalCode sql.NullString `json:"postal_code"`
+	Phone      sql.NullString `json:"phone"`
+	Email      sql.NullString `json:"email"`
+}
+
+const updatePropertyQuery = `
+UPDATE property
+SET name = coalesce($1, name), 
+    address = coalesce($2, address), 
+    state = coalesce($3, state), 
+    city = coalesce($4, city), 
+    country = coalesce($5, country), 
+    postal_code = coalesce($6, postal_code), 
+    phone = coalesce($7, phone), 
+    email = coalesce($8, email)
+WHERE external_id = $9
+RETURNING internal_id, external_id, name, address, state, city, country, postal_code, phone, email, is_active, expired_at, created_at;
+`
+
+func (q *Queries) UpdateProperty(ctx context.Context, arg UpdatePropertyParams) (*Property, error) {
+	_, err := q.db.ExecContext(ctx, updatePropertyQuery,
+		arg.Name,
+		arg.Address,
+		arg.State,
+		arg.City,
+		arg.Country,
+		arg.PostalCode,
+		arg.Phone,
+		arg.Email,
+		arg.ExternalID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return q.GetProperty(ctx, arg.ExternalID)
+}
+
 func getProperty(row *sql.Row) (*Property, error) {
 	var property Property
 	err := row.Scan(
