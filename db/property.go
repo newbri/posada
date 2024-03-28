@@ -151,6 +151,16 @@ func (q *Queries) UpdateProperty(ctx context.Context, arg UpdatePropertyParams) 
 	return getProperty(row)
 }
 
+const deletePropertyQuery = `
+	DELETE FROM property WHERE external_id = $1
+	RETURNING internal_id, external_id, name, address, state, city, country, postal_code, phone, email, is_active, expired_at, created_at;
+`
+
+func (q *Queries) DeleteProperty(ctx context.Context, externalID string) (*Property, error) {
+	row := q.db.QueryRowContext(ctx, deletePropertyQuery, externalID)
+	return getProperty(row)
+}
+
 func getProperty(row *sql.Row) (*Property, error) {
 	var property Property
 	err := row.Scan(
