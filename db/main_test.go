@@ -228,3 +228,55 @@ func createSession(arg *CreateSessionParams) *Session {
 		BlockedAt:    time.Time{},
 	}
 }
+
+func getMockedExpectedCreateProperty(property *Property) *sqlmock.Rows {
+	return sqlmock.NewRows([]string{"internal_id", "external_id", "name", "address", "state", "city", "country", "postal_code", "phone", "email", "is_active", "expired_at", "created_at"}).
+		AddRow(
+			&property.InternalID, // internal_id
+			&property.ExternalID, // external_id
+			&property.Name,       // name
+			&property.Address,    // address
+			&property.State,      // state
+			&property.City,       // city
+			&property.Country,    // country
+			&property.PostalCode, // postal_code
+			&property.Phone,      // phone
+			&property.Email,      // email
+			&property.IsActive,   // is_active
+			&property.ExpiredAt,  // expired_at
+			&property.CreatedAt,  // created_at
+		)
+}
+
+func createProperty(arg *CreatePropertyParams) *Property {
+	return &Property{
+		InternalID: uuid.New(),
+		ExternalID: "PRO103",
+		Name:       arg.Name,
+		Address:    arg.Address,
+		State:      arg.State,
+		City:       arg.City,
+		Country:    arg.Country,
+		PostalCode: arg.PostalCode,
+		Phone:      arg.Phone,
+		Email:      arg.Email,
+		IsActive:   false,
+		ExpiredAt:  arg.ExpiredAt,
+		CreatedAt:  arg.CreatedAt,
+	}
+}
+
+func createPropertyParams() *CreatePropertyParams {
+	return &CreatePropertyParams{
+		Name:       util.RandomString(9),
+		Address:    util.RandomString(9),
+		City:       util.RandomString(9),
+		State:      util.RandomString(9),
+		Country:    util.RandomString(9),
+		PostalCode: util.RandomString(6),
+		Phone:      "438 830 7862",
+		Email:      util.RandomEmail(),
+		ExpiredAt:  time.Time{},
+		CreatedAt:  time.Now(),
+	}
+}
