@@ -75,7 +75,7 @@ func (q *Queries) GetAllProperty(ctx context.Context, arg ListPropertyParams) ([
 	var items []*Property
 	for rows.Next() {
 		var property Property
-		if err := rows.Scan(
+		err := rows.Scan(
 			&property.InternalID,
 			&property.ExternalID,
 			&property.Name,
@@ -89,7 +89,8 @@ func (q *Queries) GetAllProperty(ctx context.Context, arg ListPropertyParams) ([
 			&property.IsActive,
 			&property.ExpiredAt,
 			&property.CreatedAt,
-		); err != nil {
+		)
+		if err != nil {
 			return nil, err
 		}
 		items = append(items, &property)
