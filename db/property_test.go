@@ -25,7 +25,7 @@ func TestCreateProperty(t *testing.T) {
 		response          func(querier Querier, expectedProperty *Property, arg CreatePropertyParams)
 	}{
 		{
-			name:              "OK",
+			name:              "ValidPropertyCreation",
 			propertyQueryRows: getMockedExpectedCreateProperty(expectedProperty),
 			mock: func(userQueryRows *sqlmock.Rows, arg *CreatePropertyParams) {
 				// the CreateUser sql mock
