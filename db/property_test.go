@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/require"
 	"regexp"
@@ -49,6 +50,32 @@ func TestCreateProperty(t *testing.T) {
 				actualProperty, err := querier.CreateProperty(context.Background(), arg)
 				require.NoError(t, err)
 				require.Equal(t, actualProperty, expectedProperty)
+			},
+		},
+		{
+			name:              "InvalidPropertyCreation",
+			propertyQueryRows: getMockedExpectedCreateProperty(expectedProperty),
+			mock: func(userQueryRows *sqlmock.Rows, arg *CreatePropertyParams) {
+				// the CreateUser sql mock
+				mocker.
+					ExpectQuery(regexp.QuoteMeta(createPropertyQuery)).
+					WithArgs(
+						arg.Name,
+						arg.Address,
+						arg.State,
+						arg.City,
+						arg.Country,
+						arg.PostalCode,
+						arg.Phone,
+						arg.Email,
+						arg.ExpiredAt,
+						arg.CreatedAt,
+					).WillReturnError(fmt.Errorf("sql: no rows in result set"))
+			},
+			response: func(querier Querier, expectedProperty *Property, arg CreatePropertyParams) {
+				actualProperty, err := querier.CreateProperty(context.Background(), arg)
+				require.Error(t, err)
+				require.Nil(t, actualProperty)
 			},
 		},
 	}
