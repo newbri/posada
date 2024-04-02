@@ -25,7 +25,7 @@ type Querier interface {
 	GetAllAdmin(ctx context.Context, arg ListUsersParams) ([]*User, error)
 	CreateProperty(ctx context.Context, arg CreatePropertyParams) (*Property, error)
 	ActivateDeactivateProperty(ctx context.Context, isActive bool, externalId string) (*Property, error)
-	GetAllProperty(ctx context.Context, arg ListPropertyParams) ([]*Property, error)
+	GetAllProperty(ctx context.Context, arg LimitOffset) ([]*Property, error)
 	GetProperty(ctx context.Context, Id string) (*Property, error)
 	UpdateProperty(ctx context.Context, arg UpdatePropertyParams) (*Property, error)
 	DeleteProperty(ctx context.Context, externalID string) (*Property, error)
