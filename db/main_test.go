@@ -280,3 +280,22 @@ func createPropertyParams() *CreatePropertyParams {
 		CreatedAt:  time.Now(),
 	}
 }
+
+func getMockedExpectedProperty(property *Property) *sqlmock.Rows {
+	return sqlmock.NewRows([]string{"internal_id", "external_id", "name", "address", "state", "city", "country", "postal_code", "phone", "email", "is_active", "expired_at", "created_at"}).
+		AddRow(
+			&property.InternalID, // internal_id
+			&property.ExternalID, // external_id
+			&property.Name,       // name
+			&property.Address,    // address
+			&property.State,      // state
+			&property.City,       // city
+			&property.Country,    // country
+			&property.PostalCode, // postal_code
+			&property.Phone,      // phone
+			&property.Email,      // email
+			&property.IsActive,   // is_active
+			&property.ExpiredAt,  // expired_at
+			&property.CreatedAt,  // created_at
+		)
+}

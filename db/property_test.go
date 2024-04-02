@@ -89,3 +89,49 @@ func TestCreateProperty(t *testing.T) {
 		})
 	}
 }
+
+func TestActivateDeactivateProperty(t *testing.T) {
+	db, mocker, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func(db *sql.DB) {
+		_ = db.Close()
+	}(db)
+
+	expectedProperty := createProperty(createPropertyParams())
+	testCases := []struct {
+		name              string
+		isActive          bool
+		externalId        string
+		propertyQueryRows *sqlmock.Rows
+		mock              func(userQueryRows *sqlmock.Rows, isActive bool, externalId string)
+		response          func(querier Querier, expectedProperty *Property, isActive bool, externalId string)
+	}{
+		{
+			name:              "ActivateProperty",
+			isActive:          true,
+			externalId:        "PRO103",
+			propertyQueryRows: getMockedExpectedProperty(expectedProperty),
+			mock: func(propertyQueryRows *sqlmock.Rows, isActive bool, externalId string) {
+				// the CreateUser sql mock
+				mocker.
+					ExpectQuery(regexp.QuoteMeta(activatePropertyQuery)).
+					WithArgs(isActive, externalId).
+					WillReturnRows(propertyQueryRows)
+			},
+			response: func(querier Querier, expectedProperty *Property, isActive bool, externalId string) {
+				actualProperty, err := querier.ActivateDeactivateProperty(context.Background(), isActive, externalId)
+				require.NoError(t, err)
+				require.Equal(t, actualProperty, expectedProperty)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockQuery := &Queries{db: db}
+
+			tc.mock(tc.propertyQueryRows, tc.isActive, tc.externalId)
+			tc.response(mockQuery, expectedProperty, tc.isActive, tc.externalId)
+		})
+	}
+}
