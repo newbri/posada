@@ -122,7 +122,7 @@ func (server *Server) getAllProperty(ctx *gin.Context) {
 		return
 	}
 
-	arg := db.ListPropertyParams{
+	arg := db.LimitOffset{
 		Limit:  request.Limit,
 		Offset: request.Offset,
 	}
