@@ -53,3 +53,8 @@ type Property struct {
 	ExpiredAt  time.Time `json:"expired_at"`
 	CreatedAt  time.Time `json:"created_at"`
 }
+
+type LimitOffset struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
