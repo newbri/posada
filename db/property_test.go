@@ -135,3 +135,51 @@ func TestActivateDeactivateProperty(t *testing.T) {
 		})
 	}
 }
+
+func TestGetAllProperty(t *testing.T) {
+	db, mocker, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func(db *sql.DB) {
+		_ = db.Close()
+	}(db)
+
+	expectedProperty := []*Property{createProperty(createPropertyParams())}
+	testCases := []struct {
+		name              string
+		isActive          bool
+		externalId        string
+		arg               LimitOffset
+		propertyQueryRows *sqlmock.Rows
+		mock              func(userQueryRows *sqlmock.Rows, arg LimitOffset)
+		response          func(querier Querier, expectedProperty []*Property, arg LimitOffset)
+	}{
+		{
+			name:              "GetProperty",
+			isActive:          true,
+			externalId:        "PRO103",
+			arg:               LimitOffset{Limit: 0, Offset: 0},
+			propertyQueryRows: getMockedExpectedProperty(expectedProperty[0]),
+			mock: func(propertyQueryRows *sqlmock.Rows, arg LimitOffset) {
+				// the CreateUser sql mock
+				mocker.
+					ExpectQuery(regexp.QuoteMeta(getAllPropertyQuery)).
+					WithArgs(arg.Limit, arg.Offset).
+					WillReturnRows(propertyQueryRows)
+			},
+			response: func(querier Querier, expectedProperty []*Property, arg LimitOffset) {
+				actualProperty, err := querier.GetAllProperty(context.Background(), arg)
+				require.NoError(t, err)
+				require.Equal(t, actualProperty, expectedProperty)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockQuery := &Queries{db: db}
+
+			tc.mock(tc.propertyQueryRows, tc.arg)
+			tc.response(mockQuery, expectedProperty, tc.arg)
+		})
+	}
+}
