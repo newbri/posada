@@ -53,17 +53,12 @@ func (q *Queries) ActivateDeactivateProperty(ctx context.Context, isActive bool,
 	return getProperty(row)
 }
 
-type ListPropertyParams struct {
-	Limit  int32 `json:"limit"`
-	Offset int32 `json:"offset"`
-}
-
 const getAllPropertyQuery = `
 SELECT internal_id, external_id, name, address, state, city, country, postal_code, phone, email, is_active, expired_at, created_at
 FROM property LIMIT $1 OFFSET $2;
 `
 
-func (q *Queries) GetAllProperty(ctx context.Context, arg ListPropertyParams) ([]*Property, error) {
+func (q *Queries) GetAllProperty(ctx context.Context, arg LimitOffset) ([]*Property, error) {
 	rows, err := q.db.QueryContext(ctx, getAllPropertyQuery, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
