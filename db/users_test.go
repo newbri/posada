@@ -544,3 +544,73 @@ func TestGetAllAdmin(t *testing.T) {
 		})
 	}
 }
+
+func TestGetUserByEmail(t *testing.T) {
+	db, mocker, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func(db *sql.DB) {
+		_ = db.Close()
+	}(db)
+
+	expectedUser := createRandomUserWithRole(RoleCustomer, false)
+	testCases := []struct {
+		name          string
+		userQueryRows *sqlmock.Rows
+		roleQueryRows *sqlmock.Rows
+		mock          func(userQueryRows *sqlmock.Rows, roleQueryRows *sqlmock.Rows, email string, roleId uuid.UUID, isDeleted bool)
+		response      func(querier Querier, expectedUser *User)
+	}{
+		{
+			name:          "OK",
+			userQueryRows: getMockedExpectedUserRows(expectedUser),
+			roleQueryRows: getMockedExpectedRoleRows(expectedUser.Role),
+			mock: func(userQueryRows *sqlmock.Rows, roleQueryRows *sqlmock.Rows, email string, roleId uuid.UUID, isDeleted bool) {
+
+				// the CreateUser sql mock
+				mocker.
+					ExpectQuery(regexp.QuoteMeta(getUserByEmailQuery)).
+					WithArgs(email, isDeleted).
+					WillReturnRows(userQueryRows)
+
+				// the GetRoleByUUID sql mock
+				mocker.
+					ExpectQuery(regexp.QuoteMeta(getRoleByUUIDQuery)).
+					WithArgs(roleId).
+					WillReturnRows(roleQueryRows)
+			},
+			response: func(querier Querier, expectedUser *User) {
+				actualUser, err := querier.GetUserByEmail(context.Background(), expectedUser.Email)
+				require.NoError(t, err)
+				require.Equal(t, actualUser, expectedUser)
+				require.Equal(t, actualUser.Role, expectedUser.Role)
+			},
+		},
+		{
+			name:          "Error",
+			userQueryRows: getMockedWrongExpectedUserRows(expectedUser),
+			roleQueryRows: getMockedExpectedRoleRows(expectedUser.Role),
+			mock: func(userQueryRows *sqlmock.Rows, roleQueryRows *sqlmock.Rows, email string, roleId uuid.UUID, isDeleted bool) {
+
+				// the CreateUser sql mock
+				mocker.
+					ExpectQuery(regexp.QuoteMeta(getUserByEmailQuery)).
+					WithArgs(email, isDeleted).
+					WillReturnRows(userQueryRows)
+			},
+			response: func(querier Querier, expectedUser *User) {
+				actualUser, err := querier.GetUserByEmail(context.Background(), expectedUser.Email)
+				require.Error(t, err)
+				require.Nil(t, actualUser)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockQuery := &Queries{db: db}
+
+			tc.mock(tc.userQueryRows, tc.roleQueryRows, expectedUser.Email, expectedUser.Role.InternalID, false)
+			tc.response(mockQuery, expectedUser)
+		})
+	}
+}
