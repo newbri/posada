@@ -335,6 +335,10 @@ func getAllUser(ctx *gin.Context, fun getAllFunc) {
 	ctx.JSON(http.StatusOK, users)
 }
 
+type userFullNameResponse struct {
+	FullName string `json:"full_name"`
+}
+
 func (server *Server) getUsername(ctx *gin.Context) {
 	var request struct {
 		Email string `json:"email" binding:"required,email"`
@@ -356,11 +360,9 @@ func (server *Server) getUsername(ctx *gin.Context) {
 		return
 	}
 
-	var response struct {
-		FullName string `json:"full_name"`
+	var response = userFullNameResponse{
+		FullName: user.FullName,
 	}
-
-	response.FullName = user.FullName
 
 	ctx.JSON(http.StatusOK, response)
 }
