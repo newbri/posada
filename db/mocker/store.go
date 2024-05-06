@@ -127,3 +127,10 @@ func (m *TestMocker) GetConfig() *configuration.Config {
 	ret0, _ := args.Get(0).(*configuration.Config)
 	return ret0
 }
+
+func (m *TestMocker) GetUserByEmail(ctx context.Context, email string) (*db.User, error) {
+	args := m.Called(ctx, email)
+	ret0, _ := args.Get(0).(*db.User)
+	ret1, _ := args.Get(1).(error)
+	return ret0, ret1
+}
