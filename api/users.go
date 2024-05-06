@@ -334,3 +334,33 @@ func getAllUser(ctx *gin.Context, fun getAllFunc) {
 
 	ctx.JSON(http.StatusOK, users)
 }
+
+func (server *Server) getUsername(ctx *gin.Context) {
+	var request struct {
+		Email string `json:"email" binding:"required,email"`
+	}
+
+	if err := ctx.ShouldBindJSON(&request); err != nil {
+		log.Info().Msg(ctx.Error(err).Error())
+		return
+	}
+
+	user, err := server.store.GetUserByEmail(ctx, request.Email)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			log.Info().Msg(ctx.Error(ErrNoRow).Error())
+			return
+		}
+
+		log.Info().Msg(ctx.Error(ErrInternalServer).Error())
+		return
+	}
+
+	var response struct {
+		FullName string `json:"full_name"`
+	}
+
+	response.FullName = user.FullName
+
+	ctx.JSON(http.StatusOK, response)
+}
