@@ -210,3 +210,39 @@ func (q *Queries) getUsersByRole(ctx context.Context, query string, role string,
 	}
 	return items, nil
 }
+
+const getUserByEmailQuery = `
+SELECT username, hashed_password, full_name, email, password_changed_at,
+       users.created_at, is_deleted, deleted_at,
+       p.internal_id, p.name, p.description, p.external_id, p.created_at, p.updated_at
+FROM users FULL OUTER JOIN role p ON users.role_id = p.internal_id 
+WHERE email = $1 AND is_deleted = $2;
+`
+
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (*User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByEmailQuery, email, false)
+	var user User
+	var role Role
+	err := row.Scan(
+		&user.Username,
+		&user.HashedPassword,
+		&user.FullName,
+		&user.Email,
+		&user.PasswordChangedAt,
+		&user.CreatedAt,
+		&user.IsDeleted,
+		&user.DeletedAt,
+		&role.InternalID,
+		&role.Name,
+		&role.Description,
+		&role.ExternalID,
+		&role.CreatedAt,
+		&role.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	user.Role = &role
+
+	return &user, err
+}
