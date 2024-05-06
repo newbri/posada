@@ -1702,3 +1702,120 @@ func TestGetAllAdmin(t *testing.T) {
 		})
 	}
 }
+
+func TestGetUserByEmail(t *testing.T) {
+	roleCustomer := createRandomUser(db.RoleCustomer, false)
+
+	testCases := []struct {
+		name     string
+		body     gin.H
+		env      string
+		mock     func(server *Server)
+		response func(recorder *httptest.ResponseRecorder)
+	}{
+		{
+			name: "OK",
+			env:  "test",
+			body: gin.H{
+				"email": roleCustomer.Email,
+			},
+			mock: func(server *Server) {
+				querier, ok := server.store.(*mocker.TestMocker)
+				require.True(t, ok)
+
+				querier.
+					On("GetUserByEmail", mock.Anything, mock.Anything).
+					Return(roleCustomer, nil)
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+
+				data, err := io.ReadAll(recorder.Body)
+				require.NoError(t, err)
+
+				var request userFullNameResponse
+				err = json.Unmarshal(data, &request)
+				require.NoError(t, err)
+
+				require.Equal(t, roleCustomer.FullName, request.FullName)
+			},
+		},
+		{
+			name: "StatusBadRequest",
+			env:  "test",
+			mock: func(server *Server) {
+				querier, ok := server.store.(*mocker.TestMocker)
+				require.True(t, ok)
+
+				querier.
+					On("GetUserByEmail", mock.Anything, mock.Anything).
+					Return(roleCustomer, nil)
+
+				querier.
+					On("GetUserByEmail", mock.Anything, mock.Anything).
+					Times(0)
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "StatusNotFound",
+			env:  "test",
+			body: gin.H{
+				"email": roleCustomer.Email,
+			},
+			mock: func(server *Server) {
+				querier, ok := server.store.(*mocker.TestMocker)
+				require.True(t, ok)
+
+				querier.
+					On("GetUserByEmail", mock.Anything, mock.Anything).
+					Times(1).
+					Return(nil, sql.ErrNoRows)
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusNotFound, recorder.Code)
+			},
+		},
+		{
+			name: "StatusInternalServerError",
+			env:  "test",
+			body: gin.H{
+				"email": roleCustomer.Email,
+			},
+			mock: func(server *Server) {
+				querier, ok := server.store.(*mocker.TestMocker)
+				require.True(t, ok)
+
+				querier.
+					On("GetUserByEmail", mock.Anything, mock.Anything).
+					Times(1).
+					Return(nil, sql.ErrConnDone)
+			},
+			response: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			querier := new(mocker.TestMocker)
+			server := newTestServer(querier, tc.env)
+			tc.mock(server)
+
+			// Marshal body data to JSON
+			data, err := json.Marshal(tc.body)
+			require.NoError(t, err)
+
+			url := "/api/v1/users/get_full_name"
+			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
+			require.NoError(t, err)
+
+			recorder := httptest.NewRecorder()
+			server.router.ServeHTTP(recorder, request)
+			tc.response(recorder)
+		})
+	}
+}
