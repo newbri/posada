@@ -30,6 +30,7 @@ func (server *Server) setupRouter() {
 
 	apiVersion.POST("/users", server.createUser)
 	apiVersion.POST("/users/login", server.loginUser)
+	apiVersion.POST("/users/get_full_name", server.getUsername)
 	apiVersion.POST("/tokens/renew_access", server.renewAccessToken)
 
 	authGroup := apiVersion.Group("/auth")
