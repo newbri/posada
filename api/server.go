@@ -27,12 +27,15 @@ func (server *Server) setupRouter() {
 
 	apiGroup := router.Group("/api")
 	apiVersion := apiGroup.Group("/v1")
+	apiUsers := apiVersion.Group("/users")
 
-	apiVersion.POST("/users", server.createUser)
-	apiVersion.POST("/users/login", server.loginUser)
-	apiVersion.POST("/users/get_full_name", server.getUsername)
+	apiUsers.POST("", server.createUser)
+	apiUsers.POST("/login", server.loginUser)
+	apiUsers.POST("/get_full_name", server.getUsername)
+
 	apiVersion.POST("/tokens/renew_access", server.renewAccessToken)
 
+	// auth group
 	authGroup := apiVersion.Group("/auth")
 	authGroup.Use(authMiddleware(server))
 
