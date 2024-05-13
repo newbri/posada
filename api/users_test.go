@@ -935,7 +935,7 @@ func TestLoginUser(t *testing.T) {
 			name: "OK",
 			env:  "test",
 			body: gin.H{
-				"username": expectedUser.Username,
+				"username": expectedUser.Email,
 				"password": password,
 			},
 			mock: func(server *Server) {
@@ -943,7 +943,7 @@ func TestLoginUser(t *testing.T) {
 				require.True(t, ok)
 
 				querier.
-					On("GetUser", mock.Anything, mock.Anything).
+					On("GetUserByEmail", mock.Anything, mock.Anything).
 					Return(expectedUser, nil)
 
 				accessToken, accessPayload, err := createToken(
@@ -994,7 +994,7 @@ func TestLoginUser(t *testing.T) {
 			env:  "test",
 			name: "UserNotFound",
 			body: gin.H{
-				"username": "NotFound",
+				"username": "NotFound@example.com",
 				"password": password,
 			},
 			mock: func(server *Server) {
@@ -1002,7 +1002,7 @@ func TestLoginUser(t *testing.T) {
 				require.True(t, ok)
 
 				querier.
-					On("GetUser", mock.Anything, mock.Anything).
+					On("GetUserByEmail", mock.Anything, mock.Anything).
 					Times(1).
 					Return(nil, sql.ErrNoRows)
 			},
@@ -1014,7 +1014,7 @@ func TestLoginUser(t *testing.T) {
 			env:  "test",
 			name: "IncorrectPassword",
 			body: gin.H{
-				"username": expectedUser.Username,
+				"username": expectedUser.Email,
 				"password": "incorrect",
 			},
 			mock: func(server *Server) {
@@ -1022,7 +1022,7 @@ func TestLoginUser(t *testing.T) {
 				require.True(t, ok)
 
 				querier.
-					On("GetUser", mock.Anything, mock.Anything).
+					On("GetUserByEmail", mock.Anything, mock.Anything).
 					Times(1).
 					Return(expectedUser, nil)
 			},
@@ -1034,7 +1034,7 @@ func TestLoginUser(t *testing.T) {
 			env:  "test",
 			name: "InternalError",
 			body: gin.H{
-				"username": expectedUser.Username,
+				"username": expectedUser.Email,
 				"password": password,
 			},
 			mock: func(server *Server) {
@@ -1042,7 +1042,7 @@ func TestLoginUser(t *testing.T) {
 				require.True(t, ok)
 
 				querier.
-					On("GetUser", mock.Anything, mock.Anything).
+					On("GetUserByEmail", mock.Anything, mock.Anything).
 					Times(1).
 					Return(nil, sql.ErrConnDone)
 			},
@@ -1068,7 +1068,7 @@ func TestLoginUser(t *testing.T) {
 			env:  "test",
 			name: "InvalidUsername",
 			body: gin.H{
-				"username": expectedUser.Username,
+				"username": expectedUser.Email,
 				"password": password,
 			},
 			mock: func(server *Server) {
@@ -1076,7 +1076,7 @@ func TestLoginUser(t *testing.T) {
 				require.True(t, ok)
 
 				querier.
-					On("GetUser", mock.Anything, mock.Anything).
+					On("GetUserByEmail", mock.Anything, mock.Anything).
 					Times(1).
 					Return(nil, sql.ErrNoRows)
 			},
@@ -1088,7 +1088,7 @@ func TestLoginUser(t *testing.T) {
 			env:  "test",
 			name: "AccessTokenError",
 			body: gin.H{
-				"username": expectedUser.Username,
+				"username": expectedUser.Email,
 				"password": password,
 			},
 			mock: func(server *Server) {
@@ -1096,7 +1096,7 @@ func TestLoginUser(t *testing.T) {
 				require.True(t, ok)
 
 				querier.
-					On("GetUser", mock.Anything, expectedUser.Username).
+					On("GetUserByEmail", mock.Anything, expectedUser.Email).
 					Return(expectedUser, nil).Once()
 
 				maker, ok := server.tokenMaker.(*mocker.TestMocker)
@@ -1120,7 +1120,7 @@ func TestLoginUser(t *testing.T) {
 			env:  "test",
 			name: "RefreshTokenError",
 			body: gin.H{
-				"username": expectedUser.Username,
+				"username": expectedUser.Email,
 				"password": password,
 			},
 			mock: func(server *Server) {
@@ -1128,7 +1128,7 @@ func TestLoginUser(t *testing.T) {
 				require.True(t, ok)
 
 				querier.
-					On("GetUser", mock.Anything, mock.Anything).
+					On("GetUserByEmail", mock.Anything, mock.Anything).
 					Return(expectedUser, nil)
 
 				accessToken, accessPayload, err := createToken(
@@ -1166,7 +1166,7 @@ func TestLoginUser(t *testing.T) {
 			env:  "test",
 			name: "SessionError",
 			body: gin.H{
-				"username": expectedUser.Username,
+				"username": expectedUser.Email,
 				"password": password,
 			},
 			mock: func(server *Server) {
@@ -1174,7 +1174,7 @@ func TestLoginUser(t *testing.T) {
 				require.True(t, ok)
 
 				querier.
-					On("GetUser", mock.Anything, mock.Anything).
+					On("GetUserByEmail", mock.Anything, mock.Anything).
 					Times(1).
 					Return(expectedUser, nil)
 
