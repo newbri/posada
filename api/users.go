@@ -194,7 +194,7 @@ func (server *Server) deleteUser(ctx *gin.Context) {
 
 func (server *Server) loginUser(ctx *gin.Context) {
 	var request struct {
-		Username string `json:"username" binding:"required,alphanum"`
+		Username string `json:"username" binding:"email,required"`
 		Password string `json:"password" binding:"required,min=6"`
 	}
 
@@ -203,7 +203,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		return
 	}
 
-	user, err := server.store.GetUser(ctx, request.Username)
+	user, err := server.store.GetUserByEmail(ctx, request.Username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			log.Info().Msg(ctx.Error(ErrNoRow).Error())
